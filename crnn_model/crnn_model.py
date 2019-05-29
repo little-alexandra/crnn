@@ -328,8 +328,8 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         with tf.control_dependencies(update_ops):
-            optimizer = tf.train.AdadeltaOptimizer(learning_rate=learning_rate) \
-                .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate) \
+                .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
 
         tf.summary.scalar(name='train.Learning_Rate', tensor=learning_rate)
 
