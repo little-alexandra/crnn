@@ -1,6 +1,9 @@
-import cv2
+import cv2,numpy as np
 import os
+from config.config import cfg
+import logging
 
+logger = logging.getLogger("ImageUtil")
 
 # 读取图像
 def read_image_file(image_file: str, image_type: int = 1):
@@ -16,39 +19,50 @@ def read_image_file(image_file: str, image_type: int = 1):
     return img
 
 
-# 图像缩放
+# 图像缩放，高度都是32
 def resize_batch_image(image_list: list, resize_mode: str, output_size: tuple):
     out_height, out_width = output_size
 
     # 因为模型要求，output_size 必须为32
-    if out_height != 32:
+    if out_height != cfg.ARCH.INPUT_SIZE[0]:
         raise ValueError('the height of output_size must be 32')
 
     # 因为模型要求，output_widt 必须被4整除
-    if out_width % 4 != 0:
+    if out_width % cfg.ARCH.WIDTH_REDUCE_TIMES != 0:
         raise ValueError('the width of output_size % 4 must be 0')
 
     target_image_list = []
-    if resize_mode.upper() == 'RESIZE_FORCE':
+    if resize_mode.upper() == 'RESIZE_FORCE': # 强制缩放成规定好的宽度和高度
         # 强制缩放
         for img in image_list:
             out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
             target_image_list.append(out_img)
-    elif resize_mode.upper() == "RESIZE_MAX":
+        return target_image_list
+
+    if resize_mode.upper() == "RESIZE_MAX": # 缩放成图片里最大宽度的图像的宽度
         # 批次最大化缩放
         max_width_in_list = get_max_width(image_list)
         width_max = get_valid_width(max_width_in_list, out_width)
         # 执行处理
         target_image_list = resize_batch_image(image_list, 'RESIZE_FORCE', (out_height, width_max))
-    elif resize_mode.upper() == "RESIZE_FREE":
+        return target_image_list
+
+    if resize_mode.upper() == "RESIZE_MID": # 缩放成图片里中位数宽度的图像的宽度
+        max_width_in_list = get_median_width(image_list)
+        width_max = get_valid_width(max_width_in_list, out_width)
+        # 执行处理
+        target_image_list = resize_batch_image(image_list, 'RESIZE_FORCE', (out_height, width_max))
+        return target_image_list
+
+
+    if resize_mode.upper() == "RESIZE_FREE": #只缩放高度
         # 批次
         for img in image_list:
-            out_img = get_scaled_image_no_padding(img, output_size)
+            out_img = resize_only_by_height(img, out_height)
             target_image_list.append(out_img)
-    else:
-        raise ValueError('resize_mode should be a str \'RESIZE_FORCE\' or \'RESIZE_MAX\' or \'RESIZE_FREE\'')
+        return target_image_list
 
-    return target_image_list
+    raise ValueError('resize_mode should be a str \'RESIZE_FORCE\' or \'RESIZE_MAX\' or \'RESIZE_FREE\'')
 
 
 # 获取图像列表最大宽度
@@ -62,9 +76,23 @@ def get_max_width(image_list):
     return max_width
 
 
-# 根据最大size获取合适的缩放后的图像
+# 获取图像列表宽度的中位数
+def get_median_width(image_list):
+    max_width = 0
+    width_list = [image.shape[1] for image in image_list]
+    return int(np.median(np.array(width_list)))
+
+def resize_only_by_height(image,target_height):
+    h, w, _ = image.shape
+    scale = target_height/h
+    target_image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+    logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
+    return target_image
+
+
+# 根据最大size获取合适的缩放后的图像,废弃了，处理的比较复杂，简化之,6.7,piginzoo
 def get_scaled_image_no_padding(image, max_size):
-    max_height, max_width = max_size
+    max_height, max_width    = max_size
     src_height, src_width, _ = image.shape
 
     # 获取图像缩放比例
@@ -79,7 +107,7 @@ def get_scaled_image_no_padding(image, max_size):
     # scaled_height = int(round(src_height * target_scala))
     # if scaled_height != 32:
     #     target_height = 32
-    target_height = 32
+    target_height = cfg.ARCH.INPUT_SIZE[0]
 
     # 宽度处理
     target_width = get_valid_width(scaled_width, max_width)
@@ -91,15 +119,15 @@ def get_scaled_image_no_padding(image, max_size):
 
 # 获取有效的宽度值
 def get_valid_width(width, max_width):
-    if max_width % 4 != 0:
+    if max_width % cfg.ARCH.WIDTH_REDUCE_TIMES != 0:
         raise ValueError('max_width % 4 should be 0')
 
     if width > max_width:
         return max_width
 
-    target_width = (width // 4) * 4
-    if (width > target_width) and (target_width + 4 <= max_width):
-        target_width += 4
+    target_width = (width // cfg.ARCH.WIDTH_REDUCE_TIMES) * cfg.ARCH.WIDTH_REDUCE_TIMES
+    if (width > target_width) and (target_width + cfg.ARCH.WIDTH_REDUCE_TIMES <= max_width):
+        target_width += cfg.ARCH.WIDTH_REDUCE_TIMES
     return target_width
 
 

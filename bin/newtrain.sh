@@ -13,6 +13,7 @@ if [ "$1" = "console" ]; then
         --train_dir=data/ \
         --charset=charset6k.txt \
         --name=crnn \
+        --resize_mode=RESIZE_FORCE \
         --validate_steps=1 \
         --validate_file=data/test.txt \
         --tboard_dir=tboard \
@@ -27,6 +28,7 @@ else
         --train_dir=data/ \
         --charset=charset6k.txt \
         --name=crnn \
+        --resize_mode=RESIZE_FORCE \
         --validate_steps=10000 \
         --validate_file=data/test.txt \
         --tboard_dir=tboard \

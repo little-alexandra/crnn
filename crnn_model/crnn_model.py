@@ -320,18 +320,19 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
 
-        learning_rate = tf.train.exponential_decay(config.cfg.TRAIN.LEARNING_RATE,
-                                                   global_step,
-                                                   config.cfg.TRAIN.LR_DECAY_STEPS,
-                                                   config.cfg.TRAIN.LR_DECAY_RATE,
-                                                   staircase=True)
+        # piginzoo,6.7,no need to decay for optimizer is Adam which can automatically decrease
+        # learning_rate = tf.train.exponential_decay(config.cfg.TRAIN.LEARNING_RATE,
+        #                                            global_step,
+        #                                            config.cfg.TRAIN.LR_DECAY_STEPS,
+        #                                            config.cfg.TRAIN.LR_DECAY_RATE,
+        #                                            staircase=True)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         with tf.control_dependencies(update_ops):
-            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate) \
+            optimizer = tf.train.AdamOptimizer(learning_rate=config.cfg.TRAIN.LEARNING_RATE) \
                 .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
 
-        tf.summary.scalar(name='train.Learning_Rate', tensor=learning_rate)
+        # tf.summary.scalar(name='train.Learning_Rate', tensor=learning_rate)
 
         return cost, optimizer, global_step
 
@@ -349,9 +350,11 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         #          * `A B` if `merge_repeated = True`.
         #          * `A B B B` if `merge_repeated = False`.
         #
-        decoded, log_prob = tf.nn.ctc_beam_search_decoder(net_out,
-                                                          sequence_length=batch_size,
-                                                          merge_repeated=False)
+        self.decoder = tf.nn.ctc_beam_search_decoder(net_out,
+                                                     beam_width=config.cfg.ARCH.BEAM_WIDTH,
+                                                     sequence_length=batch_size,
+                                                     merge_repeated=False)
+        decoded, log_prob = self.decoder
         #decoded = _p_shape(decoded,"通过beam search解码完")
         logger.debug("CTC网络构建完毕")
 

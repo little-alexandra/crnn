@@ -103,7 +103,7 @@ def to_sparse_tensor(sequences, dtype=np.int32):
     values = [] # 具体的值
 
     for n, seq in enumerate(sequences): # sequences是一个二维list
-        indices.extend(zip([n]*len(seq), range(len(seq)))) # 生成所有值的坐标，不管是不是0，都存下来
+        indices.extend(zip([n]*len(seq), range(len(seq)))) # 生成所有值的坐标，不管是不是0，都存下来 zip([3]*5,range(5))=>[(3, 0), (3, 1), (3, 2), (3, 3), (3, 4)]
         values.extend(seq)
 
     indices = np.asarray(indices, dtype=np.int32)

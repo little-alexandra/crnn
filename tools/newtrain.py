@@ -123,18 +123,21 @@ def train(weights_path=None):
             logger.info('从文件{:s}恢复模型，继续训练'.format(weights_path))
             saver.restore(sess=sess, save_path=weights_path)
 
-        data_generator = DataFactory.get_batch(data_dir=FLAGS.train_dir, charsets=characters, data_type='train',
-                                               batch_size=config.cfg.TRAIN.BATCH_SIZE, num_workers=FLAGS.num_threads)
+        data_generator = DataFactory.get_batch(data_dir=FLAGS.train_dir,
+                                               charsets=characters,
+                                               data_type='train',
+                                               batch_size=config.cfg.TRAIN.BATCH_SIZE,
+                                               num_workers=FLAGS.num_threads)
         for epoch in range(1, train_epochs+1):
             logger.debug("训练: 第%d次", epoch)
 
             # 获取数据
             data = next(data_generator)
             # Image缩放处理
-            data_image = image_util.resize_batch_image(data[0], 'RESIZE_FORCE', config.cfg.ARCH.INPUT_SIZE)
+            data_image = image_util.resize_batch_image(data[0], FLAGS.resize_mode, config.cfg.ARCH.INPUT_SIZE)
             # logger.debug("data_image.shape = %r", data_image.shape)
             # Image序列宽度
-            data_seq = [(img.shape[1]//4) for img in data_image]
+            data_seq = [(img.shape[1] // config.cfg.ARCH.WIDTH_REDUCE_TIMES) for img in data_image]
             # Label扩展处理
             # data_label = text_util.extend_to_max_len(data[1])
             # logger.debug("data_label.shape = %r", data_label.shape)

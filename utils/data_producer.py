@@ -39,10 +39,14 @@ class DataProducer:
                     line = label_lines[idx]
                     filename, _, label = line[:-1].partition(' ')
 
-                    # 读取图像
-                    if filename.find('data\\') != -1:
-                        filename = filename.replace('data\\', '')
-                    image_path = os.path.join(dir_path, filename)
+
+                    if os.path.exists(filename):
+                        image_path = filename
+                    else:
+                        # 读取图像
+                        if filename.find('data\\') != -1:
+                            filename = filename.replace('data\\', '')
+                        image_path = os.path.join(dir_path, filename)
                     image = image_util.read_image_file(image_path)
                     # 读取label
                     label = text_util.convert_label_to_id(label, charsets)

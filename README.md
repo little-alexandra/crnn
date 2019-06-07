@@ -1,3 +1,13 @@
+
+## 6.7 piginzoo
+几个细节：
+- 不需要考虑lable的padding了，直接转化成了SparseTensor了，所以不用padding了
+- 因为不用padding为0，所以词表的第一个不用空出来了
+- 不能用不定长的图像宽度，因为虽然dynamical-lstm支持，但是之前得过一个VGG，他要求是预定义统一宽度的
+- 因此，也决定只能resize成统一，所以加了一个resize为中位数的，尽量减少形变
+- 因为讨厌padding成0（黑色）或者255（白色），所以只选择resize
+- 不过前面的CNN怎么也不能支持宽度吧，必须要resize把，突然意识到，所谓一个批次可以宽度不定，是指的RNN的sequence吧（突然很绝望）
+
 我Fork了这个版本，主要目的是为加上注释，呵呵。
 
 # CRNN_Tensorflow
