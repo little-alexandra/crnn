@@ -79,7 +79,7 @@ __C.TRAIN.GPU_MEMORY_FRACTION = 0.85
 # Set the GPU allow growth parameter during tensorflow training process
 __C.TRAIN.TF_ALLOW_GROWTH = True
 # Set the shadownet training batch size
-__C.TRAIN.BATCH_SIZE = 64
+__C.TRAIN.BATCH_SIZE = 32
 # Set the shadownet validation batch size
 __C.TRAIN.VAL_BATCH_SIZE = 8
 # Set the learning rate decay steps
