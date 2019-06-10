@@ -10,7 +10,6 @@ Implement the crnn model mentioned in An End-to-End Trainable Neural Network for
 Recognition and Its Application to Scene Text Recognition paper
 """
 from typing import Tuple
-import numpy as np
 from config import config
 import tensorflow as tf
 from tensorflow.contrib import rnn
@@ -18,6 +17,7 @@ from local_utils import log_utils
 from crnn_model import cnn_basenet
 from local_utils.log_utils import  _p_shape
 
+FLAGS = tf.app.flags.FLAGS
 logger = log_utils.init_logger()
 
 class ShadowNet(cnn_basenet.CNNBaseModel):
@@ -309,31 +309,18 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         cost = tf.reduce_mean(tf.nn.ctc_loss(labels=labels,
                                              inputs=net_out,
                                              sequence_length=batch_size))
-                                             # config.cfg.ARCH.SEQ_LENGTH *
-                                             # np.ones(config.cfg.TRAIN.BATCH_SIZE)))
         cost = log_utils._p_shape(cost, "计算CTC loss")
 
         #  把lost放到里面去
-        tf.summary.scalar(name='train.Cost', tensor=cost)
-
+        tf.summary.scalar(name='loss', tensor=cost)
         logger.debug("cost损失函数构建完毕")
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
-
-        # piginzoo,6.7,no need to decay for optimizer is Adam which can automatically decrease
-        # learning_rate = tf.train.exponential_decay(config.cfg.TRAIN.LEARNING_RATE,
-        #                                            global_step,
-        #                                            config.cfg.TRAIN.LR_DECAY_STEPS,
-        #                                            config.cfg.TRAIN.LR_DECAY_RATE,
-        #                                            staircase=True)
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
 
         with tf.control_dependencies(update_ops):
-            optimizer = tf.train.AdamOptimizer(learning_rate=config.cfg.TRAIN.LEARNING_RATE) \
+            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate) \
                 .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
-
-        # tf.summary.scalar(name='train.Learning_Rate', tensor=learning_rate)
-
         return cost, optimizer, global_step
 
     def validate(self,net_out,labels,batch_size):
@@ -349,9 +336,8 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         #       `A B B * B * B` (where '*' is the blank label), the return value is:
         #          * `A B` if `merge_repeated = True`.
         #          * `A B B B` if `merge_repeated = False`.
-        #
         self.decoder = tf.nn.ctc_beam_search_decoder(net_out,
-                                                     beam_width=config.cfg.ARCH.BEAM_WIDTH,
+                                                     beam_width=config.BEAM_WIDTH,
                                                      sequence_length=batch_size,
                                                      merge_repeated=False)
         decoded, log_prob = self.decoder
@@ -362,6 +348,6 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         sequence_dist = tf.reduce_mean(tf.edit_distance(tf.cast(decoded[0], tf.int32), labels))
         sequence_dist = _p_shape(sequence_dist,"计算完编辑距离")
 
-        tf.summary.scalar(name='validate.Seq_Dist', tensor=sequence_dist)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
+        tf.summary.scalar(name='edit_distance', tensor=sequence_dist)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
 
         return decoded,sequence_dist
