@@ -79,7 +79,7 @@ if __name__ == '__main__':
     total = int(args.num)
 
     # 加载字符集
-    charset = data_utils.get_charset("charset6k.txt")
+    charset = data_utils.get_charset("charset.6883.txt")
 
     # 预先加载所有的纸张背景
     all_bg_images = generator.load_all_backgroud_images(os.path.join('../ctpn/data_generator/background/'))

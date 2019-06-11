@@ -276,7 +276,7 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         return net_out
 
 
-    def loss(self,net_out,labels,batch_size):
+    def loss(self,net_out,labels,sequence_length):
         # net_out是啥，[W, N * H, Cls]
         # [width, batch, n_classes]，是一个包含各个字符的概率表
         # TF的ctc_loss:http://ilovin.me/2017-04-23/tensorflow-lstm-ctc-input-output/
@@ -308,23 +308,22 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         # 对！对！对！损失函数就是p(l|x)，似然概率之和，使丫最大化。：https://blog.csdn.net/luodongri/article/details/77005948
         cost = tf.reduce_mean(tf.nn.ctc_loss(labels=labels,
                                              inputs=net_out,
-                                             sequence_length=batch_size))
-        cost = log_utils._p_shape(cost, "计算CTC loss")
+                                             sequence_length=sequence_length))
+        cost = log_utils._p(cost, "计算CTC loss")
 
         #  把lost放到里面去
         tf.summary.scalar(name='loss', tensor=cost)
         logger.debug("cost损失函数构建完毕")
 
         global_step = tf.Variable(0, name='global_step', trainable=False)
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-
-        with tf.control_dependencies(update_ops):
-            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate) \
+        # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        # with tf.control_dependencies(update_ops):
+        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate) \
                 .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
-        return cost, optimizer, global_step
+        return cost, optimizer
 
     def validate(self,net_out,labels,batch_size):
-
+        # net_out = log_utils._p_shape(net_out,"校验......")
         # 这步是在干嘛？是说，你LSTM算出每个时间片的字符分布，然后我用它来做Inference，也就是前向计算
         # 得到一个最大可能的序列，比如"我爱北京天安门"，然后下一步算编辑距离，和标签对比
         # ？？？ B变化，也就是去掉空格和重复的过程在这里面做了么？
@@ -336,18 +335,13 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         #       `A B B * B * B` (where '*' is the blank label), the return value is:
         #          * `A B` if `merge_repeated = True`.
         #          * `A B B B` if `merge_repeated = False`.
-        self.decoder = tf.nn.ctc_beam_search_decoder(net_out,
+        decoded, _ = tf.nn.ctc_beam_search_decoder(net_out,
                                                      beam_width=config.BEAM_WIDTH,
                                                      sequence_length=batch_size,
                                                      merge_repeated=False)
-        decoded, log_prob = self.decoder
-        #decoded = _p_shape(decoded,"通过beam search解码完")
-        logger.debug("CTC网络构建完毕")
 
         # 看，这就是我上面说的编辑距离的差，最小化丫呢
         sequence_dist = tf.reduce_mean(tf.edit_distance(tf.cast(decoded[0], tf.int32), labels))
-        sequence_dist = _p_shape(sequence_dist,"计算完编辑距离")
-
-        tf.summary.scalar(name='edit_distance', tensor=sequence_dist)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
+        sequence_dist = log_utils._p(sequence_dist,"计算完编辑距离")
 
         return decoded,sequence_dist

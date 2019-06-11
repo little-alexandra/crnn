@@ -80,22 +80,23 @@ def train(weights_path=None):
 
 
     # 创建优化器和损失函数的op
-    cost, optimizer, global_step = network.loss(net_out, sparse_label, sequence_size)
+    cost, optimizer = network.loss(net_out, sparse_label, sequence_size)
 
     # 创建校验用的decode和编辑距离
     validate_decode, sequence_dist = network.validate(net_out, sparse_label, sequence_size)
 
     # 创建一个变量用于把计算的精确度加载到summary中
-    sess = tf.Session()
     accuracy = tf.Variable(0, name='accuracy', trainable=False)
+    sequence_dist = tf.Variable(0, name='sequence_dist', trainable=False)
+    tf.summary.scalar(name='edit_distance', tensor=sequence_dist)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
     tf.summary.scalar(name='accuracy', tensor=accuracy)
-    train_summary_op    = tf.summary.merge_all(scope="train")
-    validate_summary_op = tf.summary.merge_all(scope="validate")
+    summary_op    = tf.summary.merge_all()
+
+    sess = tf.Session()
     summary_writer = create_summary_writer(sess)
+
     saver = tf.train.Saver()
     logger.debug("创建session")
-
-    from tools.early_stop import EarlyStop
 
     early_stop = EarlyStop(FLAGS.early_stop)
 
@@ -126,27 +127,26 @@ def train(weights_path=None):
             # validate一下
             if epoch % FLAGS.validate_steps == 0:
                 logger.info('此Epoch为检验(validate)')
-                logger.debug("%r",validate_summary_op)
-                seq_distance,preds,labels_sparse,v_summary = sess.run(
-                    [sequence_dist, validate_decode, sparse_label, validate_summary_op],
+                _sequence_dist,preds,labels_sparse = sess.run(
+                    [sequence_dist, validate_decode, sparse_label],
                     feed_dict={ input_image:data_image,
                                 sparse_label:tf.SparseTensorValue(data_label[0], data_label[1], data_label[2]),
                                 sequence_size: data_seq })
 
                 _accuracy = data_utils.caculate_accuracy(preds, labels_sparse,characters)
-                tf.assign(accuracy, _accuracy) # 更新正确率变量
+                sess.run([
+                    tf.assign(accuracy, _accuracy), # 更新正确率变量
+                    tf.assign(sequence_dist, _sequence_dist)])  # 更新正确率变量
                 logger.info('正确率计算完毕：%f', _accuracy)
-                summary_writer.add_summary(summary=v_summary, global_step=epoch)
-                if is_need_early_stop(early_stop,accuracy,saver,sess,epoch): break
+                if is_need_early_stop(early_stop,_accuracy,saver,sess,epoch): break
 
-            # 单纯训练
-            else:
-                _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
-                    feed_dict={ input_image:data_image,
-                                # input_label: data_label,
-                                sparse_label:tf.SparseTensorValue(data_label[0], data_label[1], data_label[2]),
+            _, ctc_lost, summary = sess.run([optimizer, cost, summary_op],
+                feed_dict={ input_image:data_image,
+                            # input_label: data_label,
+                            sparse_label:tf.SparseTensorValue(data_label[0], data_label[1], data_label[2]),
                                 sequence_size: data_seq })
-                summary_writer.add_summary(summary=t_summary, global_step=epoch)
+
+            summary_writer.add_summary(summary=summary, global_step=epoch)
 
             logger.info('训练: 第{:d}次，结束'.format(epoch))
 
