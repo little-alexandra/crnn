@@ -46,7 +46,6 @@ else
         --validate_num=30 \
         --validate_num_threads=1 \
         --early_stop=100 \
-        --num_threads=4 \
         --tboard_dir=tboard \
         --debug=True \
         >> ./logs/crnn.log 2>&1 &
