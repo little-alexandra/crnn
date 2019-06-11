@@ -18,17 +18,19 @@ from utils.data_factory import DataFactory
 
 tf.app.flags.DEFINE_string( 'name', 'CRNN', 'no use ,just a flag for shell batch')
 tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
-tf.app.flags.DEFINE_string( 'train_dir','data/train','')
+tf.app.flags.DEFINE_string( 'data_dir','data/train','')
 tf.app.flags.DEFINE_integer('train_batch',64,'')
 tf.app.flags.DEFINE_integer('train_steps',1000000,'')
+tf.app.flags.DEFINE_integer('train_num_threads', 4, '')
 tf.app.flags.DEFINE_string( 'label_file','train.txt','')
 tf.app.flags.DEFINE_string( 'charset','','')
 tf.app.flags.DEFINE_string( 'tboard_dir', 'tboard', '')
 tf.app.flags.DEFINE_string( 'weights_path', None, '')
-tf.app.flags.DEFINE_integer('validate_steps', 10, '')
 tf.app.flags.DEFINE_string( 'validate_file','data/test.txt','')
 tf.app.flags.DEFINE_integer('validate_batch',8,'')
-tf.app.flags.DEFINE_integer('num_threads', 4, '')
+tf.app.flags.DEFINE_integer('validate_steps', 10, '')
+tf.app.flags.DEFINE_integer('validate_num', 1000, '')
+tf.app.flags.DEFINE_integer('validate_num_threads', 1, '')
 tf.app.flags.DEFINE_float(  'learning_rate',0.001,'')
 tf.app.flags.DEFINE_integer('early_stop', 10, '')
 FLAGS = tf.app.flags.FLAGS
@@ -83,12 +85,12 @@ def train(weights_path=None):
     cost, optimizer = network.loss(net_out, sparse_label, sequence_size)
 
     # 创建校验用的decode和编辑距离
-    validate_decode, sequence_dist = network.validate(net_out, sparse_label, sequence_size)
+    validate_decode = network.validate(net_out, sequence_size)
 
     # 创建一个变量用于把计算的精确度加载到summary中
-    accuracy = tf.Variable(0, name='accuracy', trainable=False)
-    sequence_dist = tf.Variable(0, name='sequence_dist', trainable=False)
-    tf.summary.scalar(name='edit_distance', tensor=sequence_dist)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
+    accuracy = tf.Variable(0, name='accuracy', dtype=tf.float32,trainable=False)
+    edit_distance = tf.Variable(0, name='edit_distance', dtype=tf.float32, trainable=False)
+    tf.summary.scalar(name='edit_distance', tensor=edit_distance)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
     tf.summary.scalar(name='accuracy', tensor=accuracy)
     summary_op    = tf.summary.merge_all()
 
@@ -111,40 +113,57 @@ def train(weights_path=None):
             logger.info('从文件{:s}恢复模型，继续训练'.format(weights_path))
             saver.restore(sess=sess, save_path=weights_path)
 
-        data_generator = DataFactory.get_batch(data_dir=FLAGS.train_dir,
+        train_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
                                                charsets=characters,
                                                data_type='train',
                                                batch_size=FLAGS.train_batch,
-                                               num_workers=FLAGS.num_threads)
+                                               num_workers=FLAGS.train_num_threads)
+
+        validate_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
+                                               charsets=characters,
+                                               data_type='validate',
+                                               batch_size=FLAGS.validate_batch,
+                                               num_workers=FLAGS.validate_num_threads)
+
+
         for epoch in range(1, FLAGS.train_steps + 1):
             logger.info("训练: 第%d次，开始", epoch)
 
-            data = next(data_generator)
-            data_image = image_util.resize_batch_image(data[0],config.INPUT_SIZE)
-            data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_image]
-            data_label = tensor_util.to_sparse_tensor(data[1])
+            input_image_list,input_labels = next(train_data_generator)
+            data_images = image_util.resize_batch_image(input_image_list,config.INPUT_SIZE)
+            data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
+            data_labels_indices, data_labels_values, data_labels_shape = \
+                tensor_util.to_sparse_tensor(input_labels)
 
             # validate一下
             if epoch % FLAGS.validate_steps == 0:
                 logger.info('此Epoch为检验(validate)')
-                _sequence_dist,preds,labels_sparse = sess.run(
-                    [sequence_dist, validate_decode, sparse_label],
-                    feed_dict={ input_image:data_image,
-                                sparse_label:tf.SparseTensorValue(data_label[0], data_label[1], data_label[2]),
-                                sequence_size: data_seq })
 
-                _accuracy = data_utils.caculate_accuracy(preds, labels_sparse,characters)
-                sess.run([
-                    tf.assign(accuracy, _accuracy), # 更新正确率变量
-                    tf.assign(sequence_dist, _sequence_dist)])  # 更新正确率变量
-                logger.info('正确率计算完毕：%f', _accuracy)
-                if is_need_early_stop(early_stop,_accuracy,saver,sess,epoch): break
+                labels = []
+                preds = []
+                for val_step in range(0,FLAGS.validate_num):
+                    input_image_list, input_labels = next(validate_data_generator)
+                    data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
+                    data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
+                    preds_sparse = sess.run(validate_decode,feed_dict={ input_image:data_images,sequence_size: data_seq})
+                    _preds = data_utils.sparse_tensor_to_str(preds_sparse[0], characters)
+                    preds+= _preds
+                    labels+= data_utils.id2str(input_labels,characters)
+
+                logger.debug(preds)
+                logger.debug(labels)
+                _accuracy       = data_utils.caculate_accuracy(preds,labels)
+                _edit_distance  = data_utils.caculate_edit_distance(preds,labels)
+
+                sess.run([tf.assign(accuracy, _accuracy),tf.assign(edit_distance, _edit_distance)])
+
+                logger.info("Validate 正确率：%f,编辑距离：%f", _accuracy,_edit_distance)
+                if is_need_early_stop(early_stop,_edit_distance,saver,sess,epoch): break
 
             _, ctc_lost, summary = sess.run([optimizer, cost, summary_op],
-                feed_dict={ input_image:data_image,
-                            # input_label: data_label,
-                            sparse_label:tf.SparseTensorValue(data_label[0], data_label[1], data_label[2]),
-                                sequence_size: data_seq })
+                feed_dict={ input_image:data_images,
+                            sparse_label:tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
+                            sequence_size: data_seq })
 
             summary_writer.add_summary(summary=summary, global_step=epoch)
 
@@ -154,18 +173,18 @@ def train(weights_path=None):
 
 
 
-def is_need_early_stop(early_stop,f1_value,saver,sess,step):
-    decision = early_stop.decide(f1_value)
+def is_need_early_stop(early_stop,value,saver,sess,step):
+    decision = early_stop.decide(value)
 
-    if decision == EarlyStop.ZERO: # 当前F1是0，啥也甭说了，继续训练
+    if decision == EarlyStop.ZERO: # 当前Value是0，啥也甭说了，继续训练
         return False
 
     if decision == EarlyStop.CONTINUE:
-        logger.info("新F1值比最好的要小，继续训练...")
+        logger.info("新Value值比最好的要小，继续训练...")
         return False
 
     if decision == EarlyStop.BEST:
-        logger.info("新F1值[%f]大于过去最好的F1值，早停计数器重置，并保存模型", f1_value)
+        logger.info("新Value值[%f]大于过去最好的Value值，早停计数器重置，并保存模型", value)
         save_model(saver, sess, step)
         return False
 

@@ -162,7 +162,7 @@ class DataFactory:
                         time.sleep(0.01)
 
                 # yield一调用，就挂起，等着外面再来调用next()了
-                yield [image_list, label_list]
+                yield image_list, label_list
 
                 image_list = []
                 label_list = []

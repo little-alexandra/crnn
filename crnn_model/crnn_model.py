@@ -322,7 +322,7 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
                 .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
         return cost, optimizer
 
-    def validate(self,net_out,labels,batch_size):
+    def validate(self,net_out,batch_size):
         # net_out = log_utils._p_shape(net_out,"校验......")
         # 这步是在干嘛？是说，你LSTM算出每个时间片的字符分布，然后我用它来做Inference，也就是前向计算
         # 得到一个最大可能的序列，比如"我爱北京天安门"，然后下一步算编辑距离，和标签对比
@@ -339,9 +339,4 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
                                                      beam_width=config.BEAM_WIDTH,
                                                      sequence_length=batch_size,
                                                      merge_repeated=False)
-
-        # 看，这就是我上面说的编辑距离的差，最小化丫呢
-        sequence_dist = tf.reduce_mean(tf.edit_distance(tf.cast(decoded[0], tf.int32), labels))
-        sequence_dist = log_utils._p(sequence_dist,"计算完编辑距离")
-
-        return decoded,sequence_dist
+        return decoded

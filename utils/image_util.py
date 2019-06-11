@@ -33,6 +33,7 @@ def resize_batch_image(image_list: list,output_size: tuple):
 
     # 强制缩放
     for img in image_list:
+        # logger.debug("resize图片,原始尺寸:%r，Resize尺寸：%r",img.shape,(out_width, out_height))
         out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
         target_image_list.append(out_img)
 

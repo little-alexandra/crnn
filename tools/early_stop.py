@@ -10,25 +10,25 @@ class EarlyStop():
     STOP = -1
 
     def __init__(self,max_retry):
-        self.best_f1_value = 0
+        self.best_value = 0
         self.retry_counter = 0
         self.max_retry= max_retry
 
-    def decide(self,f1_value):
+    def decide(self,value):
 
-        if f1_value ==0:
+        if value ==0:
             return EarlyStop.ZERO
 
-        if f1_value>= self.best_f1_value:
-            logger.debug("[早停] 新F1值%f>旧F1值%f，记录最好的F1，继续训练",f1_value,self.best_f1_value)
+        if value>= self.best_value:
+            logger.debug("[早停] 新F1值%f>旧F1值%f，记录最好的F1，继续训练",value,self.best_value)
             # 所有的都重置
             self.retry_counter = 0
-            self.best_f1_value = f1_value
+            self.best_value = value
             return EarlyStop.BEST
 
         # 甭管怎样，先把计数器++
         self.retry_counter+=1
-        logger.debug("[早停] 新F1值%f<旧F1值%f,早停计数器:%d", f1_value, self.best_f1_value,self.retry_counter)
+        logger.debug("[早停] 新F1值%f<旧F1值%f,早停计数器:%d", value, self.best_value,self.retry_counter)
 
         # 如果还没有到达最大尝试次数，那就继续
         if self.retry_counter < self.max_retry:

@@ -15,47 +15,22 @@ from config import config
 from local_utils import log_utils
 from local_utils.log_utils import  _p_shape,_p
 import re,cv2
-
+from Levenshtein import *
 from local_utils.preprocess_utils import image_resize_with_pad
 
 logger = log_utils.init_logger()
 
 FLAGS = tf.app.flags.FLAGS
 
-## 用来计算预测出来的字符，和label之间的正确率
-def caculate_accuracy(preds,labels_sparse,characters):
-    # calculate the precision
-    preds = sparse_tensor_to_str(preds[0], characters)
-    logger.debug("预测结果为：%r", preds)
 
-    # 为何要绕这么一圈，是因为，要通过tensorflow的计算图来读取一遍labels
-    labels = sparse_tensor_to_str(labels_sparse, characters)
-    logger.debug("标签为：%r", labels)
+def caculate_edit_distance(preds , labels):
+    distances = [distance(p,l) for p,l in zip(preds,labels)]
+    return sum(distances)/len(distances)
 
-    accuracy = []
 
-    # 挨个遍历标签，
-    for index, _label in enumerate(labels):
-        pred = preds[index]
-        total_count = len(_label)
-        correct_count = 0
-        try:
-            for i, tmp in enumerate(_label):
-                if tmp == pred[i]:
-                    correct_count += 1
-        except IndexError:
-            continue
-        finally:
-            try:
-                accuracy.append(correct_count / total_count)
-            except ZeroDivisionError:
-                if len(pred) == 0:
-                    accuracy.append(1)
-                else:
-                    accuracy.append(0)
-    accuracy = np.mean(np.array(accuracy).astype(np.float32), axis=0)
-
-    return accuracy
+def caculate_accuracy(preds , labels):
+    result = [p==l for p,l in zip(preds,labels)]
+    return np.array(result).mean()
 
 
 # 把返回的稀硫tensor，转化成对应的字符List
@@ -102,6 +77,15 @@ def sparse_tensor_to_str( sparse_tensor: tf.SparseTensor,characters) -> List[str
         res.append(''.join(c for c in one_row if c != '\n'))
 
     return res
+
+def id2str(results,characters):
+
+    values = []
+    for r in results:
+        print(r)
+        str = [characters[id] for id in r]
+        values.append(''.join(c for c in str if c != '\n'))
+    return values
 
 # 加载字符集，charset.txt，最后一个是空格
 # 为了兼容charset.txt和charset6k.txt，增加鲁棒性，改一下

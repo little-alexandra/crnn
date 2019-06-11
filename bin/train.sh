@@ -10,18 +10,20 @@ if [ "$1" = "console" ]; then
     CUDA_VISIBLE_DEVICES=0 \
     python \
         -m tools.train \
-        --train_dir=data/ \
-        --train_batch=1 \
+        --data_dir=data/ \
+        --train_batch=3 \
         --train_steps=5 \
+        --train_num_threads=1 \
         --learning_rate=0.001 \
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
         --validate_steps=2 \
+        --validate_num=2 \
         --validate_file=data/test.txt \
-        --validate_batch=1 \
+        --validate_batch=3 \
+        --validate_num_threads=1 \
         --early_stop=2 \
-        --num_threads=4 \
         --tboard_dir=tboard \
         --debug=True
 else
@@ -30,17 +32,20 @@ else
     CUDA_VISIBLE_DEVICES=0 \
     python \
         -m tools.train \
-        --train_dir=data/ \
+        --data_dir=data/ \
         --train_batch=64 \
-        --train_steps=1000000 \
+        --train_steps=10000000 \
+        --train_num_threads=4 \
         --learning_rate=0.001 \
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
-        --validate_steps=1000 \
+        --validate_steps=100 \
         --validate_file=data/test.txt \
-        --validate_batch=8 \
-        --early_stop=10 \
+        --validate_batch=32 \
+        --validate_num=30 \
+        --validate_num_threads=1 \
+        --early_stop=100 \
         --num_threads=4 \
         --tboard_dir=tboard \
         --debug=True \
