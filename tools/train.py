@@ -169,6 +169,7 @@ def validate(accuracy, characters, edit_distance, input_image, sequence_size, se
         data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
         preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
+        logger.debug("Validate Inference完毕，识别了%d张图片",len(data_images))
         _preds = data_utils.sparse_tensor_to_str(preds_sparse[0], characters)
         preds += _preds
         labels += data_utils.id2str(input_labels, characters)
@@ -176,7 +177,7 @@ def validate(accuracy, characters, edit_distance, input_image, sequence_size, se
     _accuracy = data_utils.caculate_accuracy(preds, labels)
     _edit_distance = data_utils.caculate_edit_distance(preds, labels)
     sess.run([tf.assign(accuracy, _accuracy), tf.assign(edit_distance, _edit_distance)])
-    logger.info("Validate 正确率：%f,编辑距离：%f", _accuracy, _edit_distance)
+    logger.info("Validate %d张样本和%d预测计算结果：正确率 %f,编辑距离 %f", _accuracy, _edit_distance)
     logger.info('Epoch检验(validate)结束，耗时：%d 秒', time.time() - start)
     return _edit_distance
 
