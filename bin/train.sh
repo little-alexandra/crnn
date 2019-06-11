@@ -40,7 +40,7 @@ else
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
-        --validate_steps=10 \
+        --validate_steps=1000 \
         --validate_file=data/test.txt \
         --validate_batch=32 \
         --validate_num=30 \
