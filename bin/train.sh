@@ -1,3 +1,5 @@
+Date=$(date +%Y%m%d%H%M)
+
 if [ "$1" = "stop" ]; then
     echo "停止训练"
     kill -9 `ps aux|grep crnn| grep -v grep|awk '{print $2}'`
@@ -48,5 +50,5 @@ else
         --early_stop=100 \
         --tboard_dir=tboard \
         --debug=True \
-        >> ./logs/crnn.log 2>&1 &
+        >> ./logs/crnn_$Date.log 2>&1 &
 fi
