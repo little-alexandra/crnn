@@ -2,7 +2,7 @@ Date=$(date +%Y%m%d%H%M)
 
 if [ "$1" = "stop" ]; then
     echo "停止训练"
-    kill -9 `ps aux|grep crnn| grep -v grep|awk '{print $2}'`
+    kill -9 `ps aux|grep python|grep name=crnn| grep -v grep|awk '{print $2}'`
     exit
 fi
 
@@ -32,7 +32,7 @@ else
     echo "生产模式"
     # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的
     CUDA_VISIBLE_DEVICES=0 \
-    python \
+    nohup python \
         -m tools.train \
         --data_dir=data/ \
         --train_batch=64 \
