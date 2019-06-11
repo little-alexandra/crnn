@@ -269,9 +269,9 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
 
         # third apply the sequence label stage
         net_out, raw_pred = self.__sequence_label(inputdata=sequence,sequence_len=sequence_len)
-        net_out = _p_shape(net_out, "LTSM的运行态输出net_out")
+        # net_out = _p_shape(net_out, "LTSM的运行态输出net_out")
         # raw_pred = _p_shape(raw_pred, "LTSM的输出raw_pred")
-        logger.debug("网络构建完毕")
+        # logger.debug("网络构建完毕")
 
         return net_out
 

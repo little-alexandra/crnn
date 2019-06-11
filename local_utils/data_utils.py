@@ -82,7 +82,6 @@ def id2str(results,characters):
 
     values = []
     for r in results:
-        print(r)
         str = [characters[id] for id in r]
         values.append(''.join(c for c in str if c != '\n'))
     return values
@@ -211,7 +210,7 @@ def to_sparse_tensor(sequences, dtype=np.int32):
     values = np.asarray(values, dtype=dtype)
     shape = np.asarray([len(sequences),np.asarray(indices).max(0)[1]+1],
                        dtype=np.int32) # shape的行就是seqs的个数，列就是最长的那个seq的长度
-    logger.debug("labels被转化的sparse的tensor的shape:%r", shape)
+    # logger.debug("labels被转化的sparse的tensor的shape:%r", shape)
     return tf.SparseTensor(indices, values, shape)
 
 
