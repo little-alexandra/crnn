@@ -60,6 +60,16 @@ def create_summary_writer(sess):
     return summary_writer
 
 
+def summary_scalars(cost):
+    train_summary_op = tf.summary.merge([tf.summary.scalar(name='loss', tensor=cost)])
+    accuracy = tf.Variable(0, name='accuracy', dtype=tf.float32,trainable=False)
+    edit_distance = tf.Variable(0, name='edit_distance', dtype=tf.float32, trainable=False)
+    s_ed = tf.summary.scalar(name='edit_distance', tensor=edit_distance)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
+    s_ac = tf.summary.scalar(name='accuracy', tensor=accuracy)
+    validate_summary_op = tf.summary.merge([s_ed,s_ac])
+    return accuracy,edit_distance,train_summary_op,validate_summary_op
+
+
 def train(weights_path=None):
     logger.info("开始训练")
 
@@ -88,11 +98,7 @@ def train(weights_path=None):
     validate_decode = network.validate(net_out, sequence_size)
 
     # 创建一个变量用于把计算的精确度加载到summary中
-    accuracy = tf.Variable(0, name='accuracy', dtype=tf.float32,trainable=False)
-    edit_distance = tf.Variable(0, name='edit_distance', dtype=tf.float32, trainable=False)
-    tf.summary.scalar(name='edit_distance', tensor=edit_distance)  # 这个只是看错的有多离谱，并没有当做损失函数，CTC loss才是核心
-    tf.summary.scalar(name='accuracy', tensor=accuracy)
-    summary_op    = tf.summary.merge_all()
+    accuracy, edit_distance, train_summary_op, validate_summary_op = summary_scalars(cost)
 
     sess = tf.Session()
     summary_writer = create_summary_writer(sess)
@@ -137,29 +143,32 @@ def train(weights_path=None):
 
             # validate一下
             if epoch % FLAGS.validate_steps == 0:
-                _edit_distance = validate(accuracy,
+                _edit_distance = validate(epoch,
+                                         summary_writer,
+                                         accuracy,
                                          characters,
                                          edit_distance,
                                          input_image,
                                          sequence_size,
                                          sess,
                                          validate_data_generator,
-                                         validate_decode)
-                if is_need_early_stop(early_stop,_edit_distance,saver,sess,epoch): break
+                                         validate_decode,
+                                         validate_summary_op)
+                if is_need_early_stop(early_stop,-_edit_distance,saver,sess,epoch): break # 用负的编辑距离
 
-            _, ctc_lost, summary = sess.run([optimizer, cost, summary_op],
+            _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
                 feed_dict={ input_image:data_images,
                             sparse_label:tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
                             sequence_size: data_seq })
 
-            summary_writer.add_summary(summary=summary, global_step=epoch)
+            summary_writer.add_summary(summary=t_summary, global_step=epoch)
 
             logger.info('训练: 第{:d}次，结束'.format(epoch))
 
     sess.close()
 
 
-def validate(accuracy, characters, edit_distance, input_image, sequence_size, sess, validate_data_generator, validate_decode):
+def validate(epoch,summary_writer,accuracy, characters, edit_distance, input_image, sequence_size, sess, validate_data_generator, validate_decode,validate_summary_op):
     logger.info('Epoch为检验(validate)，开始，校验%d个样本',FLAGS.validate_num * FLAGS.validate_batch)
     labels = []
     preds = []
@@ -174,9 +183,11 @@ def validate(accuracy, characters, edit_distance, input_image, sequence_size, se
         preds += _preds
         labels += data_utils.id2str(input_labels, characters)
 
+
     _accuracy = data_utils.caculate_accuracy(preds, labels)
     _edit_distance = data_utils.caculate_edit_distance(preds, labels)
-    sess.run([tf.assign(accuracy, _accuracy), tf.assign(edit_distance, _edit_distance)])
+    _,_,v_summary = sess.run([tf.assign(accuracy, _accuracy), tf.assign(edit_distance, _edit_distance),validate_summary_op])
+    summary_writer.add_summary(summary=v_summary, global_step=epoch)
     logger.info("Validate %d张样本和%d预测计算结果：正确率 %f,编辑距离 %f", len(labels),len(preds), _accuracy, _edit_distance)
     logger.info('Epoch检验(validate)结束，耗时：%d 秒', time.time() - start)
     return _edit_distance
@@ -184,9 +195,6 @@ def validate(accuracy, characters, edit_distance, input_image, sequence_size, se
 
 def is_need_early_stop(early_stop,value,saver,sess,step):
     decision = early_stop.decide(value)
-
-    if decision == EarlyStop.ZERO: # 当前Value是0，啥也甭说了，继续训练
-        return False
 
     if decision == EarlyStop.CONTINUE:
         logger.info("新Value值比最好的要小，继续训练...")

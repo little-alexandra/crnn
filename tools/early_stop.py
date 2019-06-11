@@ -4,20 +4,16 @@ FLAGS = tf.app.flags.FLAGS
 logger = logging.getLogger("Ealiy Stop")
 
 class EarlyStop():
-    ZERO=0
     BEST = 1
     CONTINUE = 2
     STOP = -1
 
     def __init__(self,max_retry):
-        self.best_value = 0
+        self.best_value = -9999999
         self.retry_counter = 0
         self.max_retry= max_retry
 
     def decide(self,value):
-
-        if value ==0:
-            return EarlyStop.ZERO
 
         if value>= self.best_value:
             logger.debug("[早停] 新F1值%f>旧F1值%f，记录最好的F1，继续训练",value,self.best_value)

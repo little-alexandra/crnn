@@ -311,14 +311,12 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
                                              sequence_length=sequence_length))
         cost = log_utils._p(cost, "计算CTC loss")
 
-        #  把lost放到里面去
-        tf.summary.scalar(name='loss', tensor=cost)
-        logger.debug("cost损失函数构建完毕")
-
         global_step = tf.Variable(0, name='global_step', trainable=False)
-        # update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        # with tf.control_dependencies(update_ops):
-        optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate) \
+
+        # https://byjiang.com/2017/11/26/TensorFlow_BN_Layer/ , 这个是为了做BN，我理解是把BN学出来的moving_mean和moving_variance存起来也
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate) \
                 .minimize(loss=cost, global_step=global_step)  # <--- 这个loss是CTC的似然概率值,2019.5.29,piginzoo,之前是，论文里也是AdadeltaOptimizer
         return cost, optimizer
 

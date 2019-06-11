@@ -45,7 +45,7 @@ else
         --validate_steps=1000 \
         --validate_file=data/test.txt \
         --validate_batch=32 \
-        --validate_num=30 \
+        --validate_num=50 \
         --validate_num_threads=1 \
         --early_stop=100 \
         --tboard_dir=tboard \
