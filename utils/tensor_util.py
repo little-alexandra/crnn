@@ -110,7 +110,7 @@ def to_sparse_tensor(sequences, dtype=np.int32):
     values = np.asarray(values, dtype=dtype)
     shape = np.asarray([len(sequences),np.asarray(indices).max(0)[1]+1],
                        dtype=np.int32) # shape的行就是seqs的个数，列就是最长的那个seq的长度
-    logger.debug("labels被转化的sparse的tensor的shape:%r", shape)
+    # logger.debug("labels被转化的sparse的tensor的shape:%r", shape)
     return indices, values, shape
 
 
