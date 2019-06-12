@@ -88,7 +88,7 @@ def recognize():
         correct=0
         for index,label in enumerate(labels):
             logger.info("标签[%s] vs 识别[%s]",label,pred_result[index])
-            correct = (label == pred_result[index])
+            correct += (label == pred_result[index])
         logger.info("正确率：%f", correct/len(labels))
     else:
         logger.info('解析图片%s为：%s', image_path, pred_result)
