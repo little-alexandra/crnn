@@ -144,12 +144,12 @@ def read_images_from_disk(input_queue,characters):
     example = tf.image.decode_png(image_content, channels=3)
     # logger.debug("原始图像shape：%r", example.get_shape().as_list())
 
-    example = tf.py_func(image_resize_with_pad, [example, config.cfg.ARCH.INPUT_SIZE[0], config.cfg.ARCH.INPUT_SIZE[1], 255], [tf.uint8])
+    example = tf.py_func(image_resize_with_pad, [example, config.INPUT_SIZE[0], config.INPUT_SIZE[1], 255], [tf.uint8])
     example = tf.convert_to_tensor(tf.cast(example, tf.int32), name='img_padded')
-    example = tf.reshape(example, [config.cfg.ARCH.INPUT_SIZE[0], config.cfg.ARCH.INPUT_SIZE[1], 3])
+    example = tf.reshape(example, [config.INPUT_SIZE[0], config.INPUT_SIZE[1], 3])
     # 第2个参数size: A 1-D int32 Tensor of 2 elements: `new_height, new_width`.  The new size for the images.
     # 对，是Height，Width
-    # example = tf.image.resize_images(example, config.cfg.ARCH.INPUT_SIZE, method=0)
+    # example = tf.image.resize_images(example, config.INPUT_SIZE, method=0)
     labels = input_queue[1]
     # labels = _p_shape(labels, "解析完的labels")
     # example = _p_shape(example, "解析完的图片")
@@ -313,7 +313,7 @@ def prepare_image_labels(label_file,characters,batch_size):
 
 # 给图片加白色padding
 def padding(image):
-    H,W = config.cfg.ARCH.INPUT_SIZE
+    H,W = config.INPUT_SIZE
     h,w,c = image.shape
     logger.debug("原图大小:%d,%d" ,h,w)
 
