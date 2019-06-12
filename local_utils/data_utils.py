@@ -315,7 +315,7 @@ def prepare_image_labels(label_file,characters,batch_size):
 def padding(image):
     H,W = config.INPUT_SIZE
     h,w,c = image.shape
-    logger.debug("原图大小:%d,%d" ,h,w)
+    # logger.debug("原图大小:%d,%d" ,h,w)
 
     x_scale = W/w
     y_scale = H/h
@@ -324,7 +324,7 @@ def padding(image):
     else:
         x_scale = y_scale
 
-    logger.debug("缩放x，y方向比例:%f,%f" % (x_scale,y_scale))
+    # logger.debug("缩放x，y方向比例:%f,%f" % (x_scale,y_scale))
 
     # https://www.jianshu.com/p/11879a49d1a0 关于resize
     image =  cv2.resize(image, None, fx=x_scale, fy=y_scale, interpolation=cv2.INTER_AREA)
@@ -339,7 +339,7 @@ def padding(image):
 
     image = cv2.copyMakeBorder(image, top,bottom,left,right, cv2.BORDER_CONSTANT, value=[255,255,255])
 
-    logger.debug("padding后的图像:%r",image.shape)
+    # logger.debug("padding后的图像:%r",image.shape)
     return image
 
 

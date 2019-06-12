@@ -12,7 +12,7 @@ from config import config
 from local_utils import log_utils, data_utils
 import tensorflow as tf
 import numpy as np
-
+from utils import image_util
 FLAGS = tf.app.flags.FLAGS
 
 logger = log_utils.init_logger()
@@ -52,31 +52,46 @@ def initialize():
 def recognize():
 
     image_list = []
-    if (FLAGS.image_file):
-        image_path = os.path.join(FLAGS.image_dir,FLAGS.image_file)
-        image = cv2.imread(image_path)
+    labels = None
+    if (FLAGS.file):
+        image_path = os.path.join(FLAGS.dir,FLAGS.file)
+        logger.info("OCR识别(单个图片)：%r", image_path)
+        image = cv2.imread(image_path, cv2.IMREAD_COLOR)
         image_list.append(image)
         logger.debug("加载了图片:%s",image_path)
+    elif (FLAGS.label):
+        charset = data_utils.get_charset(FLAGS.charset)
+        image_name_list,labels = data_utils.read_labeled_image_list(FLAGS.label,charset)
+        logger.info("OCR识别(基于标签文件）：%s,图片数量：%d",FLAGS.label,len(image_list))
+        for image_path in image_name_list:
+            logger.debug("加载图片:%s", image_path)
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+            image_list.append(image)
     else:
         # 遍历图片目录
-        logger.debug("加载目录[%s]下的所有图片",FLAGS.image_dir)
-        image_names = os.listdir(FLAGS.image_dir)
+        image_names = os.listdir(FLAGS.dir)
+        logger.info("OCR识别(识别目录下所有）：%s,图片数量：%d", FLAGS.dir, len(image_names))
         for image_name in image_names:
-
             _,subfix = os.path.splitext(image_name)
             if subfix.lower() not in ['.jpg','.png','.jpeg','.gif','.bmp']: continue
 
-            image_path = os.path.join(FLAGS.image_dir, image_name)
-            image = cv2.imread(image_path)
+            image_path = os.path.join(FLAGS.dir, image_name)
             logger.debug("加载图片:%s", image_path)
+            image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
     sess = initialize()
 
     pred_result = pred(image_list,16,sess)
 
-    logger.info('解析图片%s为：%s',image_path, pred_result)
-
+    if (FLAGS.label):
+        correct=0
+        for index,label in enumerate(labels):
+            logger.info("标签[%s] vs 识别[%s]",label,pred_result[index])
+            correct = (label == pred_result[index])
+        logger.info("正确率：%f", correct/len(labels))
+    else:
+        logger.info('解析图片%s为：%s', image_path, pred_result)
 
 def build_graph(g,charset):
     with g.as_default():
@@ -123,7 +138,6 @@ def prepare_data(image_list):
         input_data.append(image)
     return np.stack(input_data,axis=0)
 
-
 # 输入是图像numpy数据，注意，顺序是RGB，注意OpenCV read的数据是BGR，要提前转化后再传给我
 def pred(image_list,_batch_size,sess):
     global charset, decodes, prob, inputdata, batch_size
@@ -142,14 +156,14 @@ def pred(image_list,_batch_size,sess):
         logger.debug("准备图像批次，从%d=>%d",begin,end)
         _input_data = image_list[begin:end]
 
-        _input_data = prepare_data(_input_data)
+        # _input_data = prepare_data(_input_data)
+        _input_data = image_util.resize_batch_image(_input_data, config.INPUT_SIZE)
 
         # batch_size，也就是CTC的sequence_length数组要求的格式是：
         # 长度是batch个，数组每个元素是sequence长度，也就是64个像素 [64,64,...64]一共batch个。
         _batch_size_array = np.array(count * [config.SEQ_LENGTH]).astype(np.int32)
 
         with sess.as_default():
-            logger.debug("开始预测,输入的数据为：%r", _input_data.shape)
             preds,__prob = sess.run(
                 [decodes,prob],
                 feed_dict={
@@ -171,18 +185,18 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_string('crnn_model_file', None,'')
     tf.app.flags.DEFINE_boolean('debug', True,'')
     tf.app.flags.DEFINE_string('charset','', '')
-    tf.app.flags.DEFINE_string('image_dir', None,'')
-    tf.app.flags.DEFINE_string('image_file', None,'')
-    tf.app.flags.DEFINE_integer('num_classes', 5990,'')
+    tf.app.flags.DEFINE_string('dir', None,'')
+    tf.app.flags.DEFINE_string('file', None,'')
+    tf.app.flags.DEFINE_string('label', None, '')
 
     if not os.path.exists(FLAGS.charset):
         logger.error("字符集文件[%s]不存在",FLAGS.charset)
         exit()
-    if not os.path.exists(FLAGS.image_dir):
-        logger.error("要识别的图片的目录[%s]不存在",FLAGS.image_dir)
+    if not os.path.exists(FLAGS.dir):
+        logger.error("要识别的图片的目录[%s]不存在",FLAGS.dir)
         exit()
-    if FLAGS.image_file and not os.path.exists(os.path.join(FLAGS.image_dir,FLAGS.image_file)):
-        logger.error("要识别的图片[%s]不存在",os.path.join(FLAGS.image_dir,FLAGS.image_file))
+    if FLAGS.file and not os.path.exists(os.path.join(FLAGS.dir,FLAGS.file)):
+        logger.error("要识别的图片[%s]不存在",os.path.join(FLAGS.dir,FLAGS.file))
         exit()
     if not os.path.exists(FLAGS.crnn_model_dir):
         logger.error("模型目录[%s]不存在",FLAGS.crnn_model_dir)
