@@ -33,12 +33,9 @@ def initialize():
         decodes, prob, inputdata, batch_size = build_graph(g,charset)
 
         # config tf session
-        sess_config = tf.ConfigProto()
-        sess_config.gpu_options.per_process_gpu_memory_fraction = config.cfg.TRAIN.GPU_MEMORY_FRACTION
-        sess_config.gpu_options.allow_growth = config.cfg.TRAIN.TF_ALLOW_GROWTH
         saver = tf.train.Saver()
         logger.debug("创建crnn saver")
-        sess = tf.Session(config=sess_config,graph=g)
+        sess = tf.Session(graph=g)
 
         if FLAGS.crnn_model_file:
             crnn_model_file_path = os.path.join(FLAGS.crnn_model_dir,FLAGS.crnn_model_file)
@@ -76,7 +73,7 @@ def recognize():
 
     sess = initialize()
 
-    pred_result = pred(image_list,_batch_size,sess)
+    pred_result = pred(image_list,16,sess)
 
     logger.info('解析图片%s为：%s',image_path, pred_result)
 
