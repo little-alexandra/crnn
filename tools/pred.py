@@ -82,10 +82,10 @@ def build_graph(g,charset):
     with g.as_default():
         logger.debug("定义TF计算图")
         net = crnn_model.ShadowNet(phase='Test',
-                                   hidden_nums=config.cfg.ARCH.HIDDEN_UNITS,
-                                   layers_nums=config.cfg.ARCH.HIDDEN_LAYERS,
+                                   hidden_nums=config.HIDDEN_UNITS,
+                                   layers_nums=config.HIDDEN_LAYERS,
                                    num_classes=len(charset))
-        h, w = config.cfg.ARCH.INPUT_SIZE  # 32,256 H,W
+        h, w = config.INPUT_SIZE  # 32,256 H,W
         inputdata = tf.placeholder(dtype=tf.float32,
                                    shape=[None, h, w, 3],
                                    name='input')
@@ -101,10 +101,10 @@ def build_graph(g,charset):
 
         # inputs: 3-D tensor,shape[max_time x batch_size x num_classes]
         decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
-                                                      beam_width=config.cfg.ARCH.BEAM_WIDTH,
+                                                      beam_width=config.BEAM_WIDTH,
                                                       sequence_length = batch_size,
                                                       merge_repeated=False)
-                                                      #sequence_length=np.array(batch*[config.cfg.ARCH.SEQ_LENGTH]),
+                                                      #sequence_length=np.array(batch*[config.SEQ_LENGTH]),
 
 
         return decodes,prob,inputdata,batch_size
@@ -115,7 +115,7 @@ def prepare_data(image_list):
     logger.debug("预测Pred准备数据，将%d个图像增加padding",len(image_list))
     for image in image_list:
         # size要求是(Width,Height)，但是定义的是Height,Width
-        # size = (config.cfg.ARCH.INPUT_SIZE[1],config.cfg.ARCH.INPUT_SIZE[0])
+        # size = (config.INPUT_SIZE[1],config.INPUT_SIZE[0])
         # size 的格式是(w,h)，这个和cv2的格式是不一样的，他的是(H,W,C)，看，反的
         # image = cv2.resize(image, size) 2019.4.19 piginzoo，resize改成padding操作
         image = data_utils.padding(image)
@@ -146,7 +146,7 @@ def pred(image_list,_batch_size,sess):
 
         # batch_size，也就是CTC的sequence_length数组要求的格式是：
         # 长度是batch个，数组每个元素是sequence长度，也就是64个像素 [64,64,...64]一共batch个。
-        _batch_size_array = np.array(count * [config.cfg.ARCH.SEQ_LENGTH]).astype(np.int32)
+        _batch_size_array = np.array(count * [config.SEQ_LENGTH]).astype(np.int32)
 
         with sess.as_default():
             logger.debug("开始预测,输入的数据为：%r", _input_data.shape)
