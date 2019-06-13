@@ -20,7 +20,7 @@ if [ "$1" = "console" ]; then
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
-
+        --resize_mode=PAD \
         --validate_steps=2 \
         --validate_num=2 \
         --validate_file=data/test.txt \
@@ -43,6 +43,7 @@ else
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
+        --resize_mode=PAD \
         --validate_steps=1000 \
         --validate_file=data/test.txt \
         --validate_batch=32 \

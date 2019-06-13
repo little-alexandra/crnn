@@ -20,7 +20,7 @@ def read_image_file(image_file: str, image_type: int = 1):
 
 
 # 图像缩放，高度都是32
-def resize_batch_image(image_list: list,output_size: tuple):
+def resize_batch_image(image_list: list,output_size: tuple,resize_mode):
     out_height, out_width = output_size
     target_image_list = []
     # 因为模型要求，output_size 必须为32
@@ -33,8 +33,14 @@ def resize_batch_image(image_list: list,output_size: tuple):
 
     # 强制缩放
     for img in image_list:
+        out_image = None
         # logger.debug("resize图片,原始尺寸:%r，Resize尺寸：%r",img.shape,(out_width, out_height))
-        out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
+        if resize_mode == config.RESIZE_MODE_FIX:
+            out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
+        elif resize_mode == config.RESIZE_MODE_FIX:
+            out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
+        else:
+            raise ValueError("识别不出来的Resize模式：%s",resize_mode)
         target_image_list.append(out_img)
 
     return target_image_list
@@ -58,10 +64,24 @@ def get_median_width(image_list):
     width_list = [image.shape[1] for image in image_list]
     return int(np.median(np.array(width_list)))
 
-def resize_only_by_height(image,target_height):
+def resize_by_height_with_padding(image,target_height,target_width):
     h, w, _ = image.shape
     scale = target_height/h
     target_image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
+
+    h, w, _ = target_image.shape
+    # 缩放完，超宽了，截掉
+    if w>target_width:
+        return target_image[:,:target_width,:]
+
+    print((target_width, target_width - w))
+    target_image = np.pad(target_image,
+                        pad_width=((0, 0),  # 高度不动
+                                   (0, target_width - w),  # 宽度(before, after),左添加0，右边添加512-目前宽度
+                                   (0, 0)), #Channel不动
+                        mode="constant",
+                        constant_values=(255))
+
     logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
     return target_image
 

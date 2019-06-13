@@ -135,7 +135,7 @@ def train(weights_path=None):
             logger.info("训练: 第%d次，开始", epoch)
 
             input_image_list,input_labels = next(train_data_generator)
-            data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
+            data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
             data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
             data_labels_indices, data_labels_values, data_labels_shape = \
                 tensor_util.to_sparse_tensor(input_labels)
@@ -174,7 +174,7 @@ def validate(epoch,summary_writer,accuracy, characters, edit_distance, input_ima
     start = time.time()
     for val_step in range(0, FLAGS.validate_num):
         input_image_list, input_labels = next(validate_data_generator)
-        data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
+        data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE,FLAGS.resize_mode)
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
         preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
         logger.debug("Validate Inference完毕，识别了%d张图片",len(data_images))
