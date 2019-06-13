@@ -8,10 +8,9 @@ import tensorflow as tf
 import time
 import datetime
 from crnn_model import crnn_model
-from local_utils import data_utils, log_utils
+from local_utils import data_utils, log_utils, image_util
 from config import config
 from utils import tensor_util
-from utils import image_util
 from utils import text_util
 from tools.early_stop import EarlyStop
 from utils.data_factory import DataFactory
@@ -136,7 +135,7 @@ def train(weights_path=None):
             logger.info("训练: 第%d次，开始", epoch)
 
             input_image_list,input_labels = next(train_data_generator)
-            data_images = image_util.resize_batch_image(input_image_list,config.INPUT_SIZE)
+            data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
             data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
             data_labels_indices, data_labels_values, data_labels_shape = \
                 tensor_util.to_sparse_tensor(input_labels)

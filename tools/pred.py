@@ -9,10 +9,10 @@ Use shadow net to recognize the scene text
 import cv2,os
 from crnn_model import crnn_model
 from config import config
-from local_utils import log_utils, data_utils
+from local_utils import log_utils, data_utils, image_util
 import tensorflow as tf
 import numpy as np
-from utils import image_util
+
 FLAGS = tf.app.flags.FLAGS
 
 logger = log_utils.init_logger()
@@ -142,7 +142,7 @@ def prepare_data(image_list):
 def pred(image_list,_batch_size,sess):
     global charset, decodes, prob, inputdata, batch_size
 
-    logger.debug("开始预测，需要预测的图片有%d张，一个批次为%d",image_list,_batch_size)
+    logger.debug("开始预测，需要预测的图片有%d张，一个批次为%d",len(image_list),_batch_size)
     result = []
     for i in range(0,len(image_list),_batch_size):
 

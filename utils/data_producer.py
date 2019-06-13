@@ -2,7 +2,7 @@ import logging
 import os
 import numpy as np
 from utils import text_util
-from utils import image_util
+from local_utils import image_util
 
 logger = logging.getLogger("data producer")
 
