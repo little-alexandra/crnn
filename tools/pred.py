@@ -19,7 +19,7 @@ logger = log_utils.init_logger()
 
 
 # 初始化3任务：1、构建图 2、加载model=>session 3、加载字符集，都放到全局变量里
-def initialize():
+def initialize(beam_width=config.BEAM_WIDTH):
 
     # 为了在不同的web请求间共享信息，需要把这些张量变量共享成全局变量
     global charset, decodes, prob, inputdata,batch_size
@@ -30,7 +30,7 @@ def initialize():
         charset  = data_utils.get_charset(FLAGS.charset)
         logger.info("加载词表，共%d个",len(charset))
 
-        decodes, prob, inputdata, batch_size = build_graph(g,charset)
+        decodes, prob, inputdata, batch_size = build_graph(g,charset,beam_width)
 
         # config tf session
         saver = tf.train.Saver()
@@ -54,7 +54,7 @@ def recognize():
     image_list = []
     labels = None
     if (FLAGS.file):
-        image_path = os.path.join(FLAGS.dir,FLAGS.file)
+        image_path = os.path.join(FLAGS.file)
         logger.info("OCR识别(单个图片)：%r", image_path)
         image = cv2.imread(image_path, cv2.IMREAD_COLOR)
         image_list.append(image)
@@ -67,7 +67,7 @@ def recognize():
             logger.debug("加载图片:%s", image_path)
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
-    else:
+    else: # 实际上这个case不太常用，没标签，预测一堆的图片，你也顾不上看对不对，仅作保留吧
         # 遍历图片目录
         image_names = os.listdir(FLAGS.dir)
         logger.info("OCR识别(识别目录下所有）：%s,图片数量：%d", FLAGS.dir, len(image_names))
@@ -80,7 +80,7 @@ def recognize():
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
-    sess = initialize()
+    sess = initialize(FLAGS.beam_width)
 
     pred_result = pred(image_list,16,sess)
 
@@ -93,7 +93,7 @@ def recognize():
     else:
         logger.info('解析图片%s为：%s', image_path, pred_result)
 
-def build_graph(g,charset):
+def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
     with g.as_default():
         logger.debug("定义TF计算图")
         net = crnn_model.ShadowNet(phase='Test',
@@ -116,7 +116,7 @@ def build_graph(g,charset):
 
         # inputs: 3-D tensor,shape[max_time x batch_size x num_classes]
         decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
-                                                      beam_width=config.BEAM_WIDTH,
+                                                      beam_width=beam_width,
                                                       sequence_length = batch_size,
                                                       merge_repeated=False)
                                                       #sequence_length=np.array(batch*[config.SEQ_LENGTH]),
@@ -172,8 +172,8 @@ def pred(image_list,_batch_size,sess):
                 })
             # 将结果，从张量变成字符串数组，session.run(arg)arg是啥类型，就ruturn啥类型
             preds = data_utils.sparse_tensor_to_str(preds[0],charset)
-            logger.debug("预测的结果结果为：%r",  preds)
-            logger.debug("预测的结果概率为：%r",  __prob)
+            logger.debug("预测结果为：%r",  preds)
+            # logger.debug("预测概率为：%r",  __prob)
             result+= preds
 
     return result
@@ -189,15 +189,17 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_string('file', None,'')
     tf.app.flags.DEFINE_string('label', None, '')
     tf.app.flags.DEFINE_string('resize_mode', 'PAD', '')
+    tf.app.flags.DEFINE_integer('beam_width', 1, '')
+
 
     if not os.path.exists(FLAGS.charset):
         logger.error("字符集文件[%s]不存在",FLAGS.charset)
         exit()
-    if not os.path.exists(FLAGS.dir):
+    if FLAGS.dir and not os.path.exists(FLAGS.dir):
         logger.error("要识别的图片的目录[%s]不存在",FLAGS.dir)
         exit()
-    if FLAGS.file and not os.path.exists(os.path.join(FLAGS.dir,FLAGS.file)):
-        logger.error("要识别的图片[%s]不存在",os.path.join(FLAGS.dir,FLAGS.file))
+    if FLAGS.file and not os.path.exists(FLAGS.file):
+        logger.error("要识别的图片[%s]不存在",FLAGS.file)
         exit()
     if not os.path.exists(FLAGS.crnn_model_dir):
         logger.error("模型目录[%s]不存在",FLAGS.crnn_model_dir)
@@ -207,8 +209,10 @@ if __name__ == '__main__':
         exit()
 
     # 识别
+    import time
+    start = time.time()
     recognize()
-    print("完成")
+    print("完成,耗时：%f秒" %(time.time() - start))
 
     # 测试prepare_data()
     # p0 = cv2.imread("test/0.png")
