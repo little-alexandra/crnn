@@ -157,7 +157,7 @@ def pred(image_list,_batch_size,sess):
         _input_data = image_list[begin:end]
 
         # _input_data = prepare_data(_input_data)
-        _input_data = image_util.resize_batch_image(_input_data, config.INPUT_SIZE)
+        _input_data = image_util.resize_batch_image(_input_data, config.INPUT_SIZE,FLAGS.resize_mode)
 
         # batch_size，也就是CTC的sequence_length数组要求的格式是：
         # 长度是batch个，数组每个元素是sequence长度，也就是64个像素 [64,64,...64]一共batch个。
@@ -188,6 +188,7 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_string('dir', None,'')
     tf.app.flags.DEFINE_string('file', None,'')
     tf.app.flags.DEFINE_string('label', None, '')
+    tf.app.flags.DEFINE_string('resize_mode', 'PAD', '')
 
     if not os.path.exists(FLAGS.charset):
         logger.error("字符集文件[%s]不存在",FLAGS.charset)
