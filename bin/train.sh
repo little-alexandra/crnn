@@ -19,7 +19,7 @@ if [ "$1" = "console" ]; then
         --learning_rate=0.001 \
         --label_file=train.txt \
         --charset=charset.6883.txt \
-        --name=crnn \
+        --name=crnn\
         --validate_steps=2 \
         --validate_num=2 \
         --validate_file=data/test.txt \
@@ -41,14 +41,14 @@ else
         --learning_rate=0.001 \
         --label_file=train.txt \
         --charset=charset.6883.txt \
-        --name=crnn \
+        --name=crnn\
         --validate_steps=1000 \
         --validate_file=data/test.txt \
         --validate_batch=32 \
-        --validate_num=50 \
+        --validate_num=20 \
         --validate_num_threads=1 \
         --early_stop=100 \
         --tboard_dir=tboard \
-        --debug=True \
+        --debug=False \
         >> ./logs/crnn_$Date.log 2>&1 &
 fi

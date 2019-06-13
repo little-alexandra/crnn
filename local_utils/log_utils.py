@@ -36,7 +36,7 @@ def _p_shape(tensor,msg):
 def init_logger(level=logging.DEBUG,
                 when="D",
                 backup=7,
-                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d * %(thread)d %(message)s",
+                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d %(message)s",
                 datefmt="%m-%d %H:%M:%S"):
     """
     init_log - initialize log module

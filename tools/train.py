@@ -16,7 +16,7 @@ from tools.early_stop import EarlyStop
 from utils.data_factory import DataFactory
 
 tf.app.flags.DEFINE_string( 'name', 'CRNN', 'no use ,just a flag for shell batch')
-tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
+tf.app.flags.DEFINE_boolean('debug', True, 'debug mode')
 tf.app.flags.DEFINE_string( 'data_dir','data/train','')
 tf.app.flags.DEFINE_integer('train_batch',64,'')
 tf.app.flags.DEFINE_integer('train_steps',1000000,'')
@@ -135,10 +135,17 @@ def train(weights_path=None):
             logger.info("训练: 第%d次，开始", epoch)
 
             input_image_list,input_labels = next(train_data_generator)
+
             data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE)
             data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
-            data_labels_indices, data_labels_values, data_labels_shape = \
-                tensor_util.to_sparse_tensor(input_labels)
+            data_labels_indices, data_labels_values, data_labels_shape = tensor_util.to_sparse_tensor(input_labels)
+
+            #调试用，可删
+            import numpy as np
+            # s = np.array(data_images)
+            # logger.debug("data_images shape is : %r" , s)
+            # logger.debug("data_sql is :%r", data_seq)
+            # logger.debug("data_sql shape is :%r",np.array(data_seq).shape)
 
             # validate一下
             if epoch % FLAGS.validate_steps == 0:
@@ -156,8 +163,8 @@ def train(weights_path=None):
                 if is_need_early_stop(early_stop,-_edit_distance,saver,sess,epoch): break # 用负的编辑距离
 
             _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
-                feed_dict={ input_image:data_images,
-                            sparse_label:tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
+                feed_dict={ input_image  : data_images,
+                            sparse_label : tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
                             sequence_size: data_seq })
 
             summary_writer.add_summary(summary=t_summary, global_step=epoch)

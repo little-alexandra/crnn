@@ -16,7 +16,7 @@ from tensorflow.contrib import rnn
 from local_utils import log_utils
 from crnn_model import cnn_basenet
 from local_utils.log_utils import  _p_shape
-
+from local_utils import log_utils
 FLAGS = tf.app.flags.FLAGS
 logger = log_utils.init_logger()
 
@@ -129,10 +129,12 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
 
         """
         logger.debug("CNN层的输入inputdata的Shape:%r",self.shape(inputdata))
+        inputdata = log_utils._p_shape(inputdata,"CNN层的输入inputdata的Shape")
 
         conv1 = self.__conv_stage(inputdata=inputdata, out_dims=64, name='conv1')  # batch*16*50*64
 
         logger.debug("CNN层第1层输出的Shape:%r", self.shape(conv1))
+        conv1 = log_utils._p_shape(conv1, "CNN层第1层输出的Shape")
 
         conv2 = self.__conv_stage(inputdata=conv1, out_dims=128, name='conv2')  # batch*8*25*128
 
@@ -174,6 +176,7 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         relu7 = self.relu(conv7)  # batch*1*25*512
 
         logger.debug("CNN层第7层输出的Shape:%r", self.shape(relu7))
+        relu7 = log_utils._p_shape(relu7, "CNN层第7层输出的Shape")
 
         return relu7
 
