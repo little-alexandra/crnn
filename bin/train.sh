@@ -20,6 +20,7 @@ if [ "$1" = "console" ]; then
         --label_file=train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
+
         --validate_steps=2 \
         --validate_num=2 \
         --validate_file=data/test.txt \

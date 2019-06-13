@@ -33,9 +33,6 @@ def rectangle_w_h(points):
 
 def main(save_path, num, label_file,charset,all_bg_images):
 
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-
     words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
 
     width , height = rectangle_w_h(points)
@@ -72,6 +69,10 @@ if __name__ == '__main__':
 
     DATA_DIR = args.dir
     TYPE= args.type
+
+    if not os.path.exists(DATA_DIR):os.makedirs(DATA_DIR)
+    if not os.path.exists(os.path.join(DATA_DIR,TYPE)): os.makedirs(os.path.join(DATA_DIR,TYPE))
+
 
     # 同时生成label，记录下你生成标签文件名
     label_file_name = os.path.join(DATA_DIR,TYPE+".txt")
