@@ -66,7 +66,7 @@ def recognize():
         logger.debug("加载了图片:%s",image_path)
     elif (FLAGS.label):
         charset = data_utils.get_charset(FLAGS.charset)
-        image_name_list,labels = data_utils.read_labeled_image_list(FLAGS.label,charset)
+        image_name_list,labels = data_utils.read_labeled_image_list(FLAGS.label,charset,unknow_charactor_replacer='■')
         logger.info("OCR识别(基于标签文件）：%s,图片数量：%d",FLAGS.label,len(image_list))
         for image_path in image_name_list:
             logger.debug("加载图片:%s", image_path)

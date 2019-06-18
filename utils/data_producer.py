@@ -10,55 +10,24 @@ logger = logging.getLogger("data producer")
 class DataProducer:
 
     @staticmethod
-    def work(dir_path, data_type, charsets):
-        def read_label_lines(in_file_path):
-            in_file = open(label_file_path, "r", encoding='UTF-8')
-            text_lines = []
-            try:
-                text_lines = in_file.readlines()
-            finally:
-                in_file.close()
-            return text_lines
+    def work(label_file_name, charsets,unknow_char=None):
+        image_file_names, labels = data_utils.read_labeled_image_list(label_file_name,charsets)
 
-        # 这里应该是读取txt
-        label_file_path = os.path.join(dir_path, data_type) + ".txt"
-
-        # 获取labels行数
-        label_lines = read_label_lines(label_file_path)
-        logger.info("find %d images in %s", len(label_lines), label_file_path)
-        label_index_list = np.arange(0, len(label_lines))
-
+        image_labels = list(zip(image_file_names, labels))
         while True:
-            np.random.shuffle(label_index_list)
+            np.random.shuffle(image_labels)
+            for image_file_name,label in image_labels:
 
-            try:
-                for idx in label_index_list:
+                if not os.path.exists(image_file_name):
+                    logger.warning("标签文件[%s]不存在啊",image_file_name)
+                    continue
 
-                    # 从文件中读取样本路径和标签值
-                    # data/train/21.png 你好北京
-                    line = label_lines[idx]
-                    filename, _, label = line[:-1].partition(' ')
+                image = image_util.read_image_file(image_file_name)
+                label = data_utils.convert_label_to_id(label, charsets)
 
+                if label is None:continue
 
-                    if os.path.exists(filename):
-                        image_path = filename
-                    else:
-                        # 读取图像
-                        if filename.find('data\\') != -1:
-                            filename = filename.replace('data\\', '')
-                        image_path = os.path.join(dir_path, filename)
-                    image = image_util.read_image_file(image_path)
-                    # 读取label
-                    label = data_utils.convert_label_to_id(label, charsets)
+                yield image, label
 
-                    if label is None:
-                        continue
-
-                    # logger.info("%s 文件读取成功", filename)
-                    yield image, label
-
-            except Exception as ex:
-                logger.exception("DataProducor Exception:", ex)
-                continue
 
 

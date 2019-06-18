@@ -6,6 +6,7 @@ if [ "$1" = "stop" ]; then
     exit
 fi
 
+
 if [ "$1" = "console" ]; then
     echo "调试模式"
     # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的
@@ -18,7 +19,7 @@ if [ "$1" = "console" ]; then
         --train_num_threads=1 \
         --model=crnn_2019-06-18-07-54-18.ckpt-405000 \
         --learning_rate=0.001 \
-        --label_file=train.txt \
+        --label_file=data/train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
         --resize_mode=PAD \
@@ -42,7 +43,7 @@ else
         --train_num_threads=4 \
         --model=crnn_2019-06-18-07-54-18.ckpt-405000 \
         --learning_rate=0.001 \
-        --label_file=train.txt \
+        --label_file=data/train.txt \
         --charset=charset.6883.txt \
         --name=crnn \
         --resize_mode=PAD \

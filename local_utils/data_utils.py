@@ -30,8 +30,8 @@ def caculate_edit_distance(preds , labels):
 # 字符串
 def caculate_accuracy(preds,labels,charset):
     # 先都处理一下
-    preds = process_unknown_charactors(preds,charset,replace_char='■')
-    labels = process_unknown_charactors(labels,charset,replace_char='■')
+    preds = process_unknown_charactors_all(preds,charset,replace_char='■')
+    labels = process_unknown_charactors_all(labels,charset,replace_char='■')
     result = [p==l for p,l in zip(preds,labels)]
     return np.array(result).mean()
 
@@ -110,10 +110,9 @@ def get_file_list(dir):
     return file_names
 
 
-def read_labeled_image_list(image_list_file,dict):
-    f = open(image_list_file, 'r')
+def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None):
+    f = open(label_file_name, 'r')
 
-    rex = re.compile(' ')
     filenames = []
     labels = []
     # 从文件中读取样本路径和标签值
@@ -125,7 +124,7 @@ def read_labeled_image_list(image_list_file,dict):
         # filename, label = line[:-1].split(' ')
         filename , _ , label = line[:-1].partition(' ') # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
 
-        label = process_unknown_charactors(label,dict,'■')#不认识的字，用■替换，尽可能的来验证样本
+        label = process_unknown_charactors(label,dict,unknow_charactor_replacer)#不认识的字，用■替换，尽可能的来验证样本
 
         # 如果此样本属于剔除样本，忽略之
         if label is None: continue
@@ -357,10 +356,15 @@ def get_charset(charset_file):
     charset = list(charset)
     return charset
 
+def process_unknown_charactors_all(all_sentence, dict,replace_char=None):
+    result = []
+    for sentence in all_sentence:
+        result.append(process_unknown_charactors(sentence, dict,replace_char))
+    return result
 
 # 1.处理一些“宽”字符,替换成词表里的
 # 2.易混淆的词，变成统一的
-# 3.对不认识的词表中的词，是否替换成某个字符
+# 3.对不认识的词表中的词，是否替换成某个字符，如果不与替换，就直接返回空
 def process_unknown_charactors(sentence, dict,replace_char=None):
     unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
     knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"

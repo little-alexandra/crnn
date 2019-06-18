@@ -130,17 +130,20 @@ def train():
         sess.run(tf.local_variables_initializer())
         if not load_or_init_model(saver,sess): return
 
-        train_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
-                                               charsets=charset,
-                                               data_type='train',
-                                               batch_size=FLAGS.train_batch,
-                                               num_workers=FLAGS.train_num_threads)
+        train_data_generator = \
+            DataFactory.get_batch( \
+                label_file_name=FLAGS.label_file,
+                charsets=charset,
+                batch_size=FLAGS.train_batch,
+                num_workers=FLAGS.train_num_threads)
 
-        validate_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
-                                               charsets=charset,
-                                               data_type='validate',
-                                               batch_size=FLAGS.validate_batch,
-                                               num_workers=FLAGS.validate_num_threads)
+        validate_data_generator = \
+            DataFactory.get_batch( \
+                label_file_name=FLAGS.validate_file,
+                charsets=charset,
+                batch_size=FLAGS.validate_batch,
+                num_workers=FLAGS.validate_num_threads,
+                unknown_char='■')#不认识的字，用■替换
 
 
         for epoch in range(1, FLAGS.train_steps + 1):

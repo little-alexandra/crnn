@@ -114,7 +114,7 @@ class DataFactory:
                 time.sleep(self.wait_time)
 
     @staticmethod
-    def get_batch(data_dir, charsets, data_type='train', batch_size=32, num_workers=4, use_multiprocessing=True):
+    def get_batch(label_file_name, charsets, batch_size=32, num_workers=4, use_multiprocessing=True,unknown_char=None):
         """ 获取数据
         :param data_dir: 数据集的路径
         :param charsets: 字符集
@@ -135,7 +135,7 @@ class DataFactory:
             logger.info("当前系统是Windows系统，修正参数num_workers=1，use_multiprocessing=False")
 
         # 定义一个工厂
-        factory = DataFactory(DataProducer.work(data_dir, data_type, charsets), use_multiprocessing)
+        factory = DataFactory(DataProducer.work(label_file_name, charsets,unknown_char), use_multiprocessing)
 
         try:
             # 工厂开始工作
