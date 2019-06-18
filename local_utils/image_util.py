@@ -80,7 +80,7 @@ def resize_by_height_with_padding(image,target_height,target_width):
     if w>target_width:
         return target_image[:,:target_width,:]
 
-    print((target_width, target_width - w))
+    # print((target_width, target_width - w))
     target_image = np.pad(target_image,
                         pad_width=((0, 0),  # 高度不动
                                    (0, target_width - w),  # 宽度(before, after),左添加0，右边添加512-目前宽度
@@ -88,7 +88,7 @@ def resize_by_height_with_padding(image,target_height,target_width):
                         mode="constant",
                         constant_values=(255))
 
-    logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
+    # logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
     return target_image
 
 
