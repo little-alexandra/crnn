@@ -25,7 +25,7 @@ tf.app.flags.DEFINE_string( 'resize_mode',None,'')
 tf.app.flags.DEFINE_string( 'label_file','train.txt','')
 tf.app.flags.DEFINE_string( 'charset','','')
 tf.app.flags.DEFINE_string( 'tboard_dir', 'tboard', '')
-tf.app.flags.DEFINE_string( 'weights_path', None, '')
+tf.app.flags.DEFINE_string( 'model', None, '')
 tf.app.flags.DEFINE_string( 'validate_file','data/test.txt','')
 tf.app.flags.DEFINE_integer('validate_batch',8,'')
 tf.app.flags.DEFINE_integer('validate_steps', 10, '')
@@ -69,8 +69,26 @@ def summary_scalars(cost):
     validate_summary_op = tf.summary.merge([s_ed,s_ac])
     return accuracy,edit_distance,train_summary_op,validate_summary_op
 
+def load_or_init_model(saver,sess):
+    model_dir = "model"
+    sess.run(tf.local_variables_initializer())
+    print(FLAGS.model)
+    if FLAGS.model is None or FLAGS.model == "":
+        logger.info('从头开始训练，不加载旧模型')
+        init = tf.global_variables_initializer()
+        sess.run(init)
+        return True
+    else:
+        model_name = os.path.join(model_dir, FLAGS.model)
+        if not os.path.exists(model_name+".meta"):
+            logger.error("模型文件[%s]不存在",model_name)
+            return False
+        logger.info('从文件[%s]恢复模型，继续训练',model_name)
+        saver.restore(sess=sess, save_path=model_name)
+        return True
 
-def train(weights_path=None):
+
+def train():
     logger.info("开始训练")
 
     # 获取字符库
@@ -102,8 +120,8 @@ def train(weights_path=None):
 
     sess = tf.Session()
     summary_writer = create_summary_writer(sess)
-
     saver = tf.train.Saver()
+
     logger.debug("创建session")
 
     early_stop = EarlyStop(FLAGS.early_stop)
@@ -111,13 +129,7 @@ def train(weights_path=None):
     with sess.as_default():
 
         sess.run(tf.local_variables_initializer())
-        if weights_path is None:
-            logger.info('从头开始训练，不加载旧模型')
-            init = tf.global_variables_initializer()
-            sess.run(init)
-        else:
-            logger.info('从文件{:s}恢复模型，继续训练'.format(weights_path))
-            saver.restore(sess=sess, save_path=weights_path)
+        if not load_or_init_model(saver,sess): return
 
         train_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
                                                charsets=characters,
