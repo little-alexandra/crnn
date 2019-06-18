@@ -36,26 +36,8 @@ def _p_shape(tensor,msg):
 def init_logger(level=logging.DEBUG,
                 when="D",
                 backup=7,
-                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d * %(thread)d %(message)s",
-                datefmt="%m-%d %H:%M:%S"):
-    """
-    init_log - initialize log module
-    :param level: msg above the level will be displayed DEBUG < INFO < WARNING < ERROR < CRITICAL
-                  the default value is logging.INFO
-    :param when:  how to split the log file by time interval
-                  'S' : Seconds
-                  'M' : Minutes
-                  'H' : Hours
-                  'D' : Days
-                  'W' : Week day
-                  default value: 'D'
-    :param backup: how many backup file to keep default value: 7
-    :param _format: format of the log default format:
-                   %(levelname)s: %(asctime)s: %(filename)s:%(lineno)d * %(thread)d %(message)s
-                   INFO: 12-09 18:02:42: log.py:40 * 139814749787872 HELLO WORLD
-    :param datefmt:
-    :return:
-    """
+                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d行 %(message)s",
+                datefmt="%Y-%m-%d %H:%M:%S"):
     log_path = ops.join(os.getcwd(), 'logs/shadownet.log')
     _dir = os.path.dirname(log_path)
     if not os.path.isdir(_dir):

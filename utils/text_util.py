@@ -1,7 +1,8 @@
 import re
+import logging
 
 rex = re.compile(' ')
-
+logger = logging.getLogger("TextUitil")
 
 # 加载字符集，charset.txt，最后一个是空格
 def get_charset(charset_file):
@@ -17,6 +18,9 @@ def process_unknown_charactors(sentence, dict):
     unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
     knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"
 
+    confuse_letters = "OolIZS"
+    replace_letters = "0011zs"
+
     result = ""
     for one in sentence:
         # 对一些特殊字符进行替换，替换成词表的词
@@ -27,10 +31,17 @@ def process_unknown_charactors(sentence, dict):
             letter = knows[i]
             # logger.debug("字符[%s]被替换成[%s]", one, letter)
 
-        # 看是否在里面
+        # 看是否在字典里，如果不在，给替换成一个怪怪的字符'■'来训练，也就是不认识的字，都当做一类，这个是为了将来识别的时候，都可以明确识别出来我不认识，而且不会浪费不认识的字的样本
+        # 但是，转念又一想，这样也不好，容易失去后期用形近字纠错的机会，嗯，算了，还是返回空，抛弃这样的样本把
         if letter not in dict:
-            # logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
+            logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
+            #letter = '■'
             return None
+
+        # 把容易混淆的字符和数字，替换一下
+        j = confuse_letters.find(letter)
+        if j!=-1:
+            letter = replace_letters[j]
 
         result+= letter
     return result

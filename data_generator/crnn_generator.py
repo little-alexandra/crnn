@@ -5,6 +5,10 @@ from data_generator import generator
 from local_utils import data_utils
 import numpy as np
 
+POSSIBILITY_CUT_EDGE = 0.1 # 10%的概率，会缺少个边
+MAX_CUT_EDGE = 4           # 最大的边的缺的像素
+
+
 DEBUG = True
 
 '''
@@ -25,16 +29,18 @@ def create_backgroud_image(bground, width, height):
 
 # 给定一个四边形，得到他的包裹的矩形的宽和高，用来做他的背景图片
 def rectangle_w_h(points):
-    if DEBUG: print("points:%r",points)
+    # if DEBUG: print("points:%r",points)
     x_min,y_min = np.min(points,axis=0)
     x_max,y_max = np.max(points,axis=0)
-    if DEBUG: print("x_min:%f,x_max:%f,y_min:%f,y_max:%f" %(x_min,x_max,y_min,y_max))
+    # if DEBUG: print("x_min:%f,x_max:%f,y_min:%f,y_max:%f" %(x_min,x_max,y_min,y_max))
     return int(x_max - x_min), int(y_max - y_min)
 
 def main(save_path, num, label_file,charset,all_bg_images):
 
     words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
+    # points,返回的是仿射的4个点，不是矩形，是旋转了的
 
+    # 弄一个矩形框包裹他
     width , height = rectangle_w_h(points)
 
     # 生成一张背景图片，剪裁好
@@ -43,7 +49,11 @@ def main(save_path, num, label_file,charset,all_bg_images):
                         width,
                         height)
 
-    background_image.paste(words_image, (0,0), words_image)
+    offset = 0
+    if np.random.choice([True, False], p=[POSSIBILITY_CUT_EDGE, 1 - POSSIBILITY_CUT_EDGE]):
+        offset = random.randint(-MAX_CUT_EDGE,MAX_CUT_EDGE)
+
+    background_image.paste(words_image, (0,offset), words_image)
 
     # 保存文本信息和对应图片名称
     image_file_name = str(num) + '.png'
@@ -64,12 +74,17 @@ if __name__ == '__main__':
     parser.add_argument("--type")
     parser.add_argument("--dir")
     parser.add_argument("--num")
+    parser.add_argument("--charset")#"charset.6883.txt"
 
     args = parser.parse_args()
 
     DATA_DIR = args.dir
     TYPE= args.type
+    charset_file_name= args.charset
 
+    if not os.path.exists(args.charset):
+        print("字符集文件[%s]不存在" % args.charset)
+        exit(-1)
     if not os.path.exists(DATA_DIR):os.makedirs(DATA_DIR)
     if not os.path.exists(os.path.join(DATA_DIR,TYPE)): os.makedirs(os.path.join(DATA_DIR,TYPE))
 
@@ -80,7 +95,7 @@ if __name__ == '__main__':
     total = int(args.num)
 
     # 加载字符集
-    charset = data_utils.get_charset("charset.6883.txt")
+    charset = data_utils.get_charset(charset_file_name)
 
     # 预先加载所有的纸张背景
     all_bg_images = generator.load_all_backgroud_images(os.path.join('../ctpn/data_generator/background/'))

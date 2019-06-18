@@ -1,12 +1,14 @@
 if [ "$1" == "--help" ]; then
     echo "pred.sh                                   预测data/validate目录下，验证文件为data/validate.txt"
     echo "pred.sh --image xx/yy.png                 预测xx/yy.png的结果"
-    echo "pred.sh --dir xxx --label yyy --beam 3    批量检测并且计算正确率"
+    echo "pred.sh --dir xxx --label yyy             批量检测并且计算正确率"
+    echo "        --beam 3 --model xxx"
     exit
 fi
 
 DIR="data/validate"
 LABEL="data/validate.txt"
+MODEL="LATEST" #"crnn_2019-06-12-11-07-43.ckpt-100000"
 BEAM=1
 
 ARGS=`getopt -o i:d:l:b --long image:,dir:,label:,beam: -- "$@"`
@@ -34,6 +36,11 @@ do
                     BEAM=$2
                     shift 2
                     ;;
+                --beam)
+                    echo "解析参数，模型：$2"
+                    MODEL=$2
+                    shift 2
+                    ;;
                 --) shift ; break ;;
                 *) echo "解析参数错误"; exit 1 ;;
         esac
@@ -43,7 +50,7 @@ if [ -n "$IMAGE" ]; then
     echo "单独识别图片：$IMAGE, BEAM: $BEAM"
     python -m tools.pred \
     --crnn_model_dir=model \
-    --crnn_model_file=crnn_2019-06-12-11-07-43.ckpt-100000 \
+    --crnn_model_file=$MODEL \
     --file=$IMAGE \
     --charset=charset.6883.txt \
     --debug=True \
