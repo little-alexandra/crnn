@@ -17,7 +17,6 @@ if [ "$1" = "console" ]; then
         --train_batch=3 \
         --train_steps=5 \
         --train_num_threads=1 \
-        --model=crnn_2019-06-18-07-54-18.ckpt-405000 \
         --learning_rate=0.001 \
         --label_file=data/train.txt \
         --charset=charset.6883.txt \

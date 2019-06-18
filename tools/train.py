@@ -71,7 +71,7 @@ def summary_scalars(cost):
 def load_or_init_model(saver,sess):
     model_dir = "model"
     sess.run(tf.local_variables_initializer())
-    print(FLAGS.model)
+    # print(FLAGS.model)
     if FLAGS.model is None or FLAGS.model == "":
         logger.info('从头开始训练，不加载旧模型')
         init = tf.global_variables_initializer()
@@ -194,8 +194,15 @@ def validate(epoch,summary_writer,accuracy, charset, edit_distance, input_image,
         preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
         logger.debug("Validate Inference完毕，识别了%d张图片",len(data_images))
         _preds = data_utils.sparse_tensor_to_str(preds_sparse[0], charset)
+        _labels = data_utils.id2str(input_labels, charset)
         preds += _preds
-        labels += data_utils.id2str(input_labels, charset)
+        labels += _labels
+
+        # 为调试方便，打印一部分预测和标签
+        if val_step==0:
+            logger.debug("抽样显示%d张识别结果",FLAGS.validate_num+1)
+            for p,l in zip(_labels,_preds):
+                logger.debug("标签[%s] 预测[%s]",p,l)
 
 
     _accuracy = data_utils.caculate_accuracy(preds, labels,charset)
