@@ -11,7 +11,6 @@ from crnn_model import crnn_model
 from local_utils import data_utils, log_utils, image_util
 from config import config
 from utils import tensor_util
-from utils import text_util
 from tools.early_stop import EarlyStop
 from utils.data_factory import DataFactory
 
@@ -92,7 +91,7 @@ def train():
     logger.info("开始训练")
 
     # 获取字符库
-    characters = text_util.get_charset(FLAGS.charset)
+    charset = data_utils.get_charset(FLAGS.charset)
 
     # 定义张量
     input_image = tf.placeholder(tf.float32, shape=[None, 32, None, 3], name='input_image')
@@ -103,7 +102,7 @@ def train():
     network = crnn_model.ShadowNet(phase='Train',
                                      hidden_nums=config.HIDDEN_UNITS, # 256
                                      layers_nums=config.HIDDEN_LAYERS,# 2层
-                                     num_classes=len(characters) + 1)
+                                     num_classes=len(charset) + 1)
 
     with tf.variable_scope('shadow', reuse=False):
         net_out = network.build(inputdata=input_image, sequence_len=sequence_size)
@@ -132,13 +131,13 @@ def train():
         if not load_or_init_model(saver,sess): return
 
         train_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
-                                               charsets=characters,
+                                               charsets=charset,
                                                data_type='train',
                                                batch_size=FLAGS.train_batch,
                                                num_workers=FLAGS.train_num_threads)
 
         validate_data_generator = DataFactory.get_batch(data_dir=FLAGS.data_dir,
-                                               charsets=characters,
+                                               charsets=charset,
                                                data_type='validate',
                                                batch_size=FLAGS.validate_batch,
                                                num_workers=FLAGS.validate_num_threads)
@@ -158,7 +157,7 @@ def train():
                 _edit_distance = validate(epoch,
                                          summary_writer,
                                          accuracy,
-                                         characters,
+                                         charset,
                                          edit_distance,
                                          input_image,
                                          sequence_size,
@@ -180,7 +179,7 @@ def train():
     sess.close()
 
 
-def validate(epoch,summary_writer,accuracy, characters, edit_distance, input_image, sequence_size, sess, validate_data_generator, validate_decode,validate_summary_op):
+def validate(epoch,summary_writer,accuracy, charset, edit_distance, input_image, sequence_size, sess, validate_data_generator, validate_decode,validate_summary_op):
     logger.info('Epoch为检验(validate)，开始，校验%d个样本',FLAGS.validate_num * FLAGS.validate_batch)
     labels = []
     preds = []
@@ -191,12 +190,12 @@ def validate(epoch,summary_writer,accuracy, characters, edit_distance, input_ima
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
         preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
         logger.debug("Validate Inference完毕，识别了%d张图片",len(data_images))
-        _preds = data_utils.sparse_tensor_to_str(preds_sparse[0], characters)
+        _preds = data_utils.sparse_tensor_to_str(preds_sparse[0], charset)
         preds += _preds
-        labels += data_utils.id2str(input_labels, characters)
+        labels += data_utils.id2str(input_labels, charset)
 
 
-    _accuracy = data_utils.caculate_accuracy(preds, labels)
+    _accuracy = data_utils.caculate_accuracy(preds, labels,charset)
     _edit_distance = data_utils.caculate_edit_distance(preds, labels)
     _,_,v_summary = sess.run([tf.assign(accuracy, _accuracy), tf.assign(edit_distance, _edit_distance),validate_summary_op])
     summary_writer.add_summary(summary=v_summary, global_step=epoch)

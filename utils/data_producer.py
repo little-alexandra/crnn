@@ -1,8 +1,8 @@
 import logging
 import os
 import numpy as np
-from utils import text_util
 from local_utils import image_util
+from local_utils import data_utils
 
 logger = logging.getLogger("data producer")
 
@@ -49,7 +49,7 @@ class DataProducer:
                         image_path = os.path.join(dir_path, filename)
                     image = image_util.read_image_file(image_path)
                     # 读取label
-                    label = text_util.convert_label_to_id(label, charsets)
+                    label = data_utils.convert_label_to_id(label, charsets)
 
                     if label is None:
                         continue

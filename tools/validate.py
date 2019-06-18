@@ -9,19 +9,7 @@ logger = log_utils.init_logger()
 FLAGS = tf.app.flags.FLAGS
 
 
-def caculate_precision(preds,labels):
-    total = correct = 0
-    for pred,label in zip(preds,labels):
-        total+= len(label)
-        correct+= compare_one_sentence(pred,label)
-    return correct / total
 
-# 遍历目标pred，看看每个字，是不是在label里，如果在就count+1
-def compare_one_sentence(pred,label):
-    count=0
-    for p in pred:
-        if p in label: count+=1
-    return count
 
 def validate():
 
@@ -71,5 +59,5 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_integer('validate_num', 1000,'')
 
     pred_result, labels = validate()
-    p = caculate_precision(pred_result, labels)
+    p = data_utils.caculate_accuracy(pred_result, labels)
     logger.info("验证了%d条数据，正确率为：%f",len(labels),p)

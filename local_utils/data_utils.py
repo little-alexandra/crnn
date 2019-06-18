@@ -14,7 +14,7 @@ import tensorflow as tf
 from config import config
 from local_utils import log_utils
 from local_utils.log_utils import  _p_shape,_p
-import re,cv2
+import re,cv2,logging
 from Levenshtein import *
 from local_utils.preprocess_utils import image_resize_with_pad
 
@@ -27,8 +27,11 @@ def caculate_edit_distance(preds , labels):
     distances = [distance(p,l) for p,l in zip(preds,labels)]
     return sum(distances)/len(distances)
 
-
-def caculate_accuracy(preds , labels):
+# 字符串
+def caculate_accuracy(preds,labels,charset):
+    # 先都处理一下
+    preds = process_unknown_charactors(preds,charset,replace_char='■')
+    labels = process_unknown_charactors(labels,charset,replace_char='■')
     result = [p==l for p,l in zip(preds,labels)]
     return np.array(result).mean()
 
@@ -122,7 +125,7 @@ def read_labeled_image_list(image_list_file,dict):
         # filename, label = line[:-1].split(' ')
         filename , _ , label = line[:-1].partition(' ') # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
 
-        label = process_unknown_charactors(label,dict)
+        label = process_unknown_charactors(label,dict,'■')#不认识的字，用■替换，尽可能的来验证样本
 
         # 如果此样本属于剔除样本，忽略之
         if label is None: continue
@@ -156,27 +159,27 @@ def read_images_from_disk(input_queue,characters):
     return example, labels
 
 
-def process_unknown_charactors(sentence,dict):
-    unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
-    knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"
-
-    result = ""
-    for one in sentence:
-        # 对一些特殊字符进行替换，替换成词表的词
-        i = unkowns.find(one)
-        if i==-1:
-            letter = one
-        else:
-            letter = knows[i]
-            # logger.debug("字符[%s]被替换成[%s]", one, letter)
-
-        # 看是否在里面
-        if letter not in dict:
-            # logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
-            return None
-
-        result+= letter
-    return result
+# def process_unknown_charactors(sentence,dict):
+#     unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
+#     knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"
+#
+#     result = ""
+#     for one in sentence:
+#         # 对一些特殊字符进行替换，替换成词表的词
+#         i = unkowns.find(one)
+#         if i==-1:
+#             letter = one
+#         else:
+#             letter = knows[i]
+#             # logger.debug("字符[%s]被替换成[%s]", one, letter)
+#
+#         # 看是否在里面
+#         if letter not in dict:
+#             # logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
+#             return None
+#
+#         result+= letter
+#     return result
 
 
 # labels是所有的标签的数组['我爱北京','我爱天安门',...,'他说的法定']
@@ -342,6 +345,83 @@ def padding(image):
     # logger.debug("padding后的图像:%r",image.shape)
     return image
 
+
+
+rex = re.compile(' ')
+logger = logging.getLogger("TextUitil")
+
+# 加载字符集，charset.txt，最后一个是空格
+def get_charset(charset_file):
+    charset = open(charset_file, 'r', encoding='utf-8').readlines()
+    charset = [ch.strip("\n") for ch in charset]
+    charset = "".join(charset)
+    charset = list(charset)
+    return charset
+
+
+# 1.处理一些“宽”字符,替换成词表里的
+# 2.易混淆的词，变成统一的
+# 3.对不认识的词表中的词，是否替换成某个字符
+def process_unknown_charactors(sentence, dict,replace_char=None):
+    unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
+    knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"
+    confuse_letters = "OolIZS"
+    replace_letters = "0011zs"
+
+    result = ""
+    for one in sentence:
+        # 对一些特殊字符进行替换，替换成词表的词
+        i = unkowns.find(one)
+        if i==-1:
+            letter = one
+        else:
+            letter = knows[i]
+            # logger.debug("字符[%s]被替换成[%s]", one, letter)
+
+        # 看是否在字典里，如果不在，给替换成一个怪怪的字符'■'来训练，也就是不认识的字，都当做一类，这个是为了将来识别的时候，都可以明确识别出来我不认识，而且不会浪费不认识的字的样本
+        # 但是，转念又一想，这样也不好，容易失去后期用形近字纠错的机会，嗯，算了，还是返回空，抛弃这样的样本把
+        if letter not in dict:
+            if replace_char:
+                letter = replace_char#'■'
+            else:
+                logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
+                return None
+
+        # 把容易混淆的字符和数字，替换一下
+        j = confuse_letters.find(letter)
+        if j!=-1:
+            letter = replace_letters[j]
+
+        result+= letter
+    return result
+
+
+# 将label转换为数字表示
+def convert_label_to_id(label, charsets):
+    # 获取label内容
+    # 1.label预处理校验
+    label = process_unknown_charactors(label, charsets)
+    # 2.非空校验
+    if label is None:
+        return None
+    # 3.去除空格
+    label = rex.sub('', label)
+    # 4.将label转为数字
+    label = [charsets.index(l) for l in label]
+    return label
+
+
+# 按照List中最大长度扩展label
+def extend_to_max_len(labels, ext_val: int = -1):
+    max_len = 0
+    for one in labels:
+        if len(one)>max_len:
+            max_len = len(one)
+
+    for one in labels:
+        one.extend( [ext_val] * (max_len - len(one)) )
+
+    return labels
 
 if __name__=="__main__":
     tf.app.flags.DEFINE_string('charset', 'charset6k.txt', '')
