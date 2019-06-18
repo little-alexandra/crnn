@@ -132,7 +132,6 @@ def read_labeled_image_list(image_list_file,dict):
 
         filenames.append(filename)
 
-        label = rex.sub('',label)
         labels.append(label)
 
     logger.info("最终样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
@@ -369,6 +368,10 @@ def process_unknown_charactors(sentence, dict,replace_char=None):
     replace_letters = "0011zs"
 
     result = ""
+
+    # 先去除空格
+    sentence = rex.sub('', sentence)
+
     for one in sentence:
         # 对一些特殊字符进行替换，替换成词表的词
         i = unkowns.find(one)
@@ -404,8 +407,6 @@ def convert_label_to_id(label, charsets):
     # 2.非空校验
     if label is None:
         return None
-    # 3.去除空格
-    label = rex.sub('', label)
     # 4.将label转为数字
     label = [charsets.index(l) for l in label]
     return label
