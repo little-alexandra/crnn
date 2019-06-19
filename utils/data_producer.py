@@ -21,18 +21,20 @@ class DataProducer:
                     logger.warning("标签文件[%s]不存在啊",image_file_name)
                     continue
 
-                image = image_util.read_image_file(image_file_name)
-                label = data_utils.convert_label_to_id(_label, charsets)
-
-                # 除了个bug，image加载失败了，所以为了防止这点，忽略空
+                label = data_utils.process_unknown_charactors(_label, charsets, unknow_char)
                 if label is None or len(label)==0:
                     logger.error("解析标签字符串失败，忽略此样本：[%s]",_label)
                     continue
+
+                label_index = data_utils.convert_label_to_id(_label, charsets)
+                if label_index is None: continue
+
+                image = image_util.read_image_file(image_file_name)
                 if image is None:
                     logger.error("解析样本图片失败，忽略此样本：[%s]", image_file_name)
                     continue
 
-                yield image, label
+                yield image, label_index
 
-
+            logger.info("遍历完所有的样本，继续下一个epochs遍历")
 

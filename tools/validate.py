@@ -14,7 +14,8 @@ FLAGS = tf.app.flags.FLAGS
 def validate():
 
     charset  = data_utils.get_charset(FLAGS.charset)
-    image_names, labels = data_utils.read_labeled_image_list(FLAGS.label_file,charset,unknow_charactor_replacer='■')
+    image_names, labels = data_utils.read_labeled_image_list(FLAGS.label_file,charset)
+    labels = data_utils.process_unknown_charactors_all(labels,charset,replace_char='■')
 
     # 遍历图片目
     logger.debug("加载目录[%s]下的所有图片[%d]张", FLAGS.image_dir,len(image_names))

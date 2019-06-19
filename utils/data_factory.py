@@ -49,6 +49,8 @@ class DataFactory:
                     else:
                         time.sleep(self.wait_time)
             except Exception:
+                import traceback
+                traceback.print_exc()
                 self._stop_event.set()
                 raise
 
@@ -82,6 +84,8 @@ class DataFactory:
             raise
 
     def is_running(self):
+        # print(self._stop_event)
+        # print(self._stop_event.is_set())
         return self._stop_event is not None and not self._stop_event.is_set()
 
     def is_empty(self):
@@ -148,15 +152,18 @@ class DataFactory:
                 image_list = []
                 label_list = []
                 image_size = 0
+
                 while factory.is_running():
+
                     if not factory.is_empty():
+
                         # 读取数据
                         image, label = next(factory.get())
                         image_list.append(image)
                         label_list.append(label)
 
                         image_size += 1
-                        # logger.debug("从 DataFactory 中获取数据")
+                        logger.debug("从 DataFactory 中获取数据：%s",label)
 
                         if image_size>=batch_size:
                             break

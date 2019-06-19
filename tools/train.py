@@ -150,6 +150,7 @@ def train():
             logger.info("训练: 第%d次，开始", epoch)
             try:
                 input_image_list,input_labels = next(train_data_generator)
+                print(len(input_labels))
                 data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
                 data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
                 data_labels_indices, data_labels_values, data_labels_shape = \
@@ -212,8 +213,7 @@ def validate(epoch,summary_writer,accuracy, charset, edit_distance, input_image,
             for p,l in zip(_labels,_preds):
                 logger.debug("标签[%s] 预测[%s]",p,l)
 
-
-    _accuracy = data_utils.caculate_accuracy(preds, labels,charset)
+    _accuracy = data_utils.caculate_accuracy(preds, labels)
     _edit_distance = data_utils.caculate_edit_distance(preds, labels)
     _,_,v_summary = sess.run([tf.assign(accuracy, _accuracy), tf.assign(edit_distance, _edit_distance),validate_summary_op])
     summary_writer.add_summary(summary=v_summary, global_step=epoch)

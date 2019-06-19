@@ -28,9 +28,7 @@ def caculate_edit_distance(preds , labels):
     return sum(distances)/len(distances)
 
 # 字符串
-def caculate_accuracy(preds,labels,charset):
-    preds = process_unknown_charactors_all(preds,charset,replace_char='■')
-    labels = process_unknown_charactors_all(labels,charset,replace_char='■')
+def caculate_accuracy(preds,labels):
     result = [p==l for p,l in zip(preds,labels)]
     return np.array(result).mean()
 
@@ -122,14 +120,9 @@ def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None)
         # logger.debug("line=%s",line)
         # filename, label = line[:-1].split(' ')
         filename , _ , label = line[:-1].partition(' ') # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
-
-        label = process_unknown_charactors(label,dict,unknow_charactor_replacer)#不认识的字，用■替换，尽可能的来验证样本
-
-        # 如果此样本属于剔除样本，忽略之
-        if label is None: continue
-
         filenames.append(filename)
-
+        # 去除label中的空格
+        label = rex.sub('', label)
         labels.append(label)
 
     logger.info("最终样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
@@ -382,8 +375,13 @@ def process_unknown_charactors(sentence, dict,replace_char=None):
 
 # 将label转换为数字表示
 def convert_label_to_id(label, charsets):
-    label = [charsets.index(l) for l in label]
-    return label
+    label_index = []
+    for l in label:
+        if not l in charsets:
+            logger.error("字符串[%s]中的字符[%s]未在词表中",label,l)
+            return None
+        label_index.append(charsets.index(l))
+    return label_index
 
 
 # 按照List中最大长度扩展label
