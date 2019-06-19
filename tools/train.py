@@ -189,6 +189,9 @@ def validate(epoch,summary_writer,accuracy, charset, edit_distance, input_image,
     start = time.time()
     for val_step in range(0, FLAGS.validate_num):
         input_image_list, input_labels = next(validate_data_generator)
+        if len(input_image_list)==0:
+            logger.error("读取的本批次图片数量为0，忽略")
+            continue
         data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE,FLAGS.resize_mode)
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
         preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})

@@ -139,7 +139,7 @@ class DataFactory:
 
         try:
             # 工厂开始工作
-            factory.start(max_queue_size=24, workers=num_workers)
+            factory.start(max_queue_size=320, workers=num_workers)
 
             # 开始从工厂里面获取数据
             while True:
@@ -168,8 +168,10 @@ class DataFactory:
                 label_list = []
                 image_size = 0
         except Exception as ex:
+            logger.error("读取样本队列发生严重错误：%s",str(ex))
             factory.stop()
             raise
         finally:
+            logger.info("队列读取任务结束")
             if factory is not None:
                 factory.stop()

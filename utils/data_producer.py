@@ -11,8 +11,7 @@ class DataProducer:
 
     @staticmethod
     def work(label_file_name, charsets,unknow_char=None):
-        image_file_names, labels = data_utils.read_labeled_image_list(label_file_name,charsets)
-
+        image_file_names, labels = data_utils.read_labeled_image_list(label_file_name,charsets,unknow_char)
         image_labels = list(zip(image_file_names, labels))
         while True:
             np.random.shuffle(image_labels)
@@ -27,10 +26,10 @@ class DataProducer:
 
                 # 除了个bug，image加载失败了，所以为了防止这点，忽略空
                 if label is None:
-                    logger.warnning("解析标签字符串失败，忽略此样本：%s",_label)
+                    logger.error("解析标签字符串失败，忽略此样本：%s",_label)
                     continue
                 if image is None:
-                    logger.warnning("解析样本图片失败，忽略此样本：%s", image_file_name)
+                    logger.error("解析样本图片失败，忽略此样本：%s", image_file_name)
                     continue
 
                 yield image, label
