@@ -163,7 +163,7 @@ class DataFactory:
                         label_list.append(label)
 
                         image_size += 1
-                        logger.debug("从 DataFactory 中获取数据：%s",label)
+                        # logger.debug("从 DataFactory 中获取数据：%s",label)
 
                         if image_size>=batch_size:
                             break

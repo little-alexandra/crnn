@@ -21,12 +21,12 @@ class DataProducer:
                     logger.warning("标签文件[%s]不存在啊",image_file_name)
                     continue
 
-                label = data_utils.process_unknown_charactors(_label, charsets, unknow_char)
-                if label is None or len(label)==0:
+                processed_label = data_utils.process_unknown_charactors(_label, charsets, unknow_char)
+                if processed_label is None or len(processed_label)==0:
                     logger.error("解析标签字符串失败，忽略此样本：[%s]",_label)
                     continue
 
-                label_index = data_utils.convert_label_to_id(_label, charsets)
+                label_index = data_utils.convert_label_to_id(processed_label, charsets)
                 if label_index is None: continue
 
                 image = image_util.read_image_file(image_file_name)

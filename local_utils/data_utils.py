@@ -121,8 +121,6 @@ def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None)
         # filename, label = line[:-1].split(' ')
         filename , _ , label = line[:-1].partition(' ') # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
         filenames.append(filename)
-        # 去除label中的空格
-        label = rex.sub('', label)
         labels.append(label)
 
     logger.info("最终样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
