@@ -29,7 +29,6 @@ def caculate_edit_distance(preds , labels):
 
 # 字符串
 def caculate_accuracy(preds,labels,charset):
-    # 先都处理一下
     preds = process_unknown_charactors_all(preds,charset,replace_char='■')
     labels = process_unknown_charactors_all(labels,charset,replace_char='■')
     result = [p==l for p,l in zip(preds,labels)]
@@ -156,28 +155,6 @@ def read_images_from_disk(input_queue,characters):
     # example = _p_shape(example, "解析完的图片")
     return example, labels
 
-
-# def process_unknown_charactors(sentence,dict):
-#     unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／"
-#     knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/"
-#
-#     result = ""
-#     for one in sentence:
-#         # 对一些特殊字符进行替换，替换成词表的词
-#         i = unkowns.find(one)
-#         if i==-1:
-#             letter = one
-#         else:
-#             letter = knows[i]
-#             # logger.debug("字符[%s]被替换成[%s]", one, letter)
-#
-#         # 看是否在里面
-#         if letter not in dict:
-#             # logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
-#             return None
-#
-#         result+= letter
-#     return result
 
 
 # labels是所有的标签的数组['我爱北京','我爱天安门',...,'他说的法定']
@@ -366,8 +343,8 @@ def process_unknown_charactors_all(all_sentence, dict,replace_char=None):
 # 2.易混淆的词，变成统一的
 # 3.对不认识的词表中的词，是否替换成某个字符，如果不与替换，就直接返回空
 def process_unknown_charactors(sentence, dict,replace_char=None):
-    unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／×·"
-    knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/x."
+    unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／×·■"
+    knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/x.."
     confuse_letters = "OolIZS"
     replace_letters = "0011zs"
 
@@ -405,13 +382,6 @@ def process_unknown_charactors(sentence, dict,replace_char=None):
 
 # 将label转换为数字表示
 def convert_label_to_id(label, charsets):
-    # 获取label内容
-    # 1.label预处理校验
-    label = process_unknown_charactors(label, charsets)
-    # 2.非空校验
-    if label is None:
-        return None
-    # 4.将label转为数字
     label = [charsets.index(l) for l in label]
     return label
 

@@ -75,6 +75,8 @@ class DataFactory:
                 self._threads.append(thread)
                 thread.start()
         except Exception as ex:
+            import traceback
+            traceback.print_exc()
             logger.exception("DataFactory start Exception:", ex)
             self.stop()
             raise

@@ -148,34 +148,39 @@ def train():
 
         for epoch in range(1, FLAGS.train_steps + 1):
             logger.info("训练: 第%d次，开始", epoch)
+            try:
+                input_image_list,input_labels = next(train_data_generator)
+                data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
+                data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
+                data_labels_indices, data_labels_values, data_labels_shape = \
+                    tensor_util.to_sparse_tensor(input_labels)
 
-            input_image_list,input_labels = next(train_data_generator)
-            data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
-            data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
-            data_labels_indices, data_labels_values, data_labels_shape = \
-                tensor_util.to_sparse_tensor(input_labels)
+                # validate一下
+                if epoch % FLAGS.validate_steps == 0:
+                    _edit_distance = validate(epoch,
+                                             summary_writer,
+                                             accuracy,
+                                             charset,
+                                             edit_distance,
+                                             input_image,
+                                             sequence_size,
+                                             sess,
+                                             validate_data_generator,
+                                             validate_decode,
+                                             validate_summary_op)
+                    if is_need_early_stop(early_stop,-_edit_distance,saver,sess,epoch): break # 用负的编辑距离
 
-            # validate一下
-            if epoch % FLAGS.validate_steps == 0:
-                _edit_distance = validate(epoch,
-                                         summary_writer,
-                                         accuracy,
-                                         charset,
-                                         edit_distance,
-                                         input_image,
-                                         sequence_size,
-                                         sess,
-                                         validate_data_generator,
-                                         validate_decode,
-                                         validate_summary_op)
-                if is_need_early_stop(early_stop,-_edit_distance,saver,sess,epoch): break # 用负的编辑距离
+                _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
+                    feed_dict={ input_image:data_images,
+                                sparse_label:tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
+                                sequence_size: data_seq })
 
-            _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
-                feed_dict={ input_image:data_images,
-                            sparse_label:tf.SparseTensorValue(data_labels_indices, data_labels_values, data_labels_shape),
-                            sequence_size: data_seq })
-
-            summary_writer.add_summary(summary=t_summary, global_step=epoch)
+                summary_writer.add_summary(summary=t_summary, global_step=epoch)
+            # 为防止退出，增加保护
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                logger.error("训练发生错误，忽略:%r",e)
 
             logger.info('训练: 第{:d}次，结束'.format(epoch))
 

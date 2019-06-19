@@ -25,11 +25,11 @@ class DataProducer:
                 label = data_utils.convert_label_to_id(_label, charsets)
 
                 # 除了个bug，image加载失败了，所以为了防止这点，忽略空
-                if label is None:
-                    logger.error("解析标签字符串失败，忽略此样本：%s",_label)
+                if label is None or len(label)==0:
+                    logger.error("解析标签字符串失败，忽略此样本：[%s]",_label)
                     continue
                 if image is None:
-                    logger.error("解析样本图片失败，忽略此样本：%s", image_file_name)
+                    logger.error("解析样本图片失败，忽略此样本：[%s]", image_file_name)
                     continue
 
                 yield image, label
