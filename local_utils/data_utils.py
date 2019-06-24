@@ -107,7 +107,7 @@ def get_file_list(dir):
     return file_names
 
 
-def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None):
+def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None,limit=None):
     f = open(label_file_name, 'r')
 
     filenames = []
@@ -123,7 +123,13 @@ def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None)
         filenames.append(filename)
         labels.append(label)
 
-    logger.info("最终样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
+    logger.info("样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
+
+    if limit:
+        image_labels = list(zip(filenames, labels))
+        np.random.shuffle(image_labels)
+        logger.info("实际返回%d个样本",limit)
+        return zip(*image_labels[0:limit])
 
     return filenames, labels
 
@@ -323,6 +329,21 @@ def get_charset(charset_file):
     charset = "".join(charset)
     charset = list(charset)
     return charset
+
+
+def stat(data):
+    if len(data)==0: return "data size is 0"
+    if type(data)==list:
+        data = np.array(data)
+
+    return "num={},mean={},std={},max={},min={},25%/50%/75%={},0={}".format(
+        len(data),
+        data.mean(),
+        data.std(),
+        data.max(),
+        data.min(),
+        np.percentile(data, [25, 50, 75]),
+        (data==0).sum())
 
 def process_unknown_charactors_all(all_sentence, dict,replace_char=None):
     result = []

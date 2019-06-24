@@ -1,6 +1,6 @@
-if [ "$3" = "" ]; then
-    echo "Usage: imagen.sh <type:train|test|validate> <dir:data> <num:100> <charset>"
+if [ "$5" = "" ]; then
+    echo "Usage: imagen.sh <type:train|test|validate> <dir:data> <num:100> <worker> <charset>"
     exit
 fi
 
-python -m data_generator.crnn_generator --type=$1 --dir=$2 --num=$3 --charset=$4
+python -m data_generator.crnn_generator --type=$1 --dir=$2 --num=$3 --worker=$4 --charset=$5

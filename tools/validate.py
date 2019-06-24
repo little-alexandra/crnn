@@ -43,7 +43,7 @@ def validate():
 
     sess = pred.initialize()
 
-    pred_result = pred.pred(image_list,
+    pred_result,_ = pred.pred(image_list,
                             config.cfg.TRAIN.VAL_BATCH_SIZE,
                             sess)
 

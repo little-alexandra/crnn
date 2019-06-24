@@ -66,12 +66,18 @@ def recognize():
         logger.debug("加载了图片:%s",image_path)
     elif (FLAGS.label):
         charset = data_utils.get_charset(FLAGS.charset)
-        image_name_list,labels = data_utils.read_labeled_image_list(FLAGS.label,charset,unknow_charactor_replacer='■')
-        logger.info("OCR识别(基于标签文件）：%s,图片数量：%d",FLAGS.label,len(image_list))
-        for image_path in image_name_list:
+        image_name_list,labels = data_utils.read_labeled_image_list(FLAGS.label,charset,unknow_charactor_replacer='■',limit=100)
+        logger.info("OCR识别(基于标签文件）：%s,图片数量：%d",FLAGS.label,len(image_name_list))
+        filtered_labels = []
+        for label, image_path in zip(labels,image_name_list):
+            if not os.path.exists(image_path):
+                    logger.error("图片不存在：%s", image_path)
+                    continue
             logger.debug("加载图片:%s", image_path)
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
+            filtered_labels.append(label)
+        labels = filtered_labels
     else: # 实际上这个case不太常用，没标签，预测一堆的图片，你也顾不上看对不对，仅作保留吧
         # 遍历图片目录
         image_names = os.listdir(FLAGS.dir)
@@ -81,22 +87,26 @@ def recognize():
             if subfix.lower() not in ['.jpg','.png','.jpeg','.gif','.bmp']: continue
 
             image_path = os.path.join(FLAGS.dir, image_name)
+            if not os.path.exists(image_path):
+                    logger.error("图片不存在：%s", image_path)
+                    continue
             logger.debug("加载图片:%s", image_path)
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
     sess = initialize(FLAGS.beam_width)
 
-    pred_result = pred(image_list,16,sess)
+    preds,probs = pred(image_list,16,sess)
 
-    if (FLAGS.label):
+    if (FLAGS.file):
+        logger.info('解析图片%s为：%r,概率：%r', image_path, preds[0],probs[0])
+    else:
         correct=0
         for index,label in enumerate(labels):
-            logger.info("标签[%s] vs 识别[%s]",label,pred_result[index])
-            correct += (label == pred_result[index])
+            logger.info("概率 ：%f | 标签[%s] vs 识别[%s]",probs[index],label,preds[index],)
+            correct += (label == preds[index])
         logger.info("正确率：%f", correct/len(labels))
-    else:
-        logger.info('解析图片%s为：%s', image_path, pred_result)
+        logger.info("识别概率统计：%s",data_utils.stat(probs))
 
 def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
     with g.as_default():
@@ -104,7 +114,7 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         net = crnn_model.ShadowNet(phase='Test',
                                    hidden_nums=config.HIDDEN_UNITS,
                                    layers_nums=config.HIDDEN_LAYERS,
-                                   num_classes=len(charset))
+                                   num_classes=len(charset)+1) #这里+1是为了ctc_loss需要，预测多一个类，叫空格
         h, w = config.INPUT_SIZE  # 32,256 H,W
         inputdata = tf.placeholder(dtype=tf.float32,
                                    shape=[None, h, w, 3],
@@ -172,7 +182,8 @@ def pred(image_list,_batch_size,sess):
     global charset, decodes, prob, inputdata, batch_size
 
     logger.debug("开始预测，需要预测的图片有%d张，一个批次为%d",len(image_list),_batch_size)
-    result = []
+    pred_result = [] #预测结果，每个元素是一个字符串
+    prob_result = [] #预测结果概率
     for i in range(0,len(image_list),_batch_size):
 
         # 计算实际的batch大小，最后一批数量可能会少一些
@@ -182,7 +193,7 @@ def pred(image_list,_batch_size,sess):
             end = len(image_list)
         count = end - begin
 
-        logger.debug("准备图像批次，从%d=>%d",begin,end)
+        logger.debug("从所有图像[%d]抽取批次，从%d=>%d",len(image_list),begin,end)
         _input_data = image_list[begin:end]
 
         # _input_data = prepare_data(_input_data)
@@ -193,19 +204,21 @@ def pred(image_list,_batch_size,sess):
         _batch_size_array = np.array(count * [config.SEQ_LENGTH]).astype(np.int32)
 
         with sess.as_default():
-            preds,__prob = sess.run(
+            preds,_prob = sess.run(
                 [decodes,prob],
                 feed_dict={
                     inputdata :_input_data,
                     batch_size:_batch_size_array # 这个是为了指导LSTM，以及CTC Beam Seach的参数
                 })
+
             # 将结果，从张量变成字符串数组，session.run(arg)arg是啥类型，就ruturn啥类型
             preds = data_utils.sparse_tensor_to_str(preds[0],charset)
             logger.debug("预测结果为：%r",  preds)
-            # logger.debug("预测概率为：%r",  __prob)
-            result+= preds
+            # logger.debug("预测概率为：%r",  _prob.tolist())
+            pred_result+= preds
+            prob_result+= [p[0] for p in _prob]#0是贪心法的第一条
 
-    return result
+    return pred_result,prob_result
 
 # 如果不指定文件名，识别data/test/目录下的所有图片，否则具体的照片
 if __name__ == '__main__':

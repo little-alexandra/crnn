@@ -1,9 +1,11 @@
 import sys,os,random
-from PIL import Image
 sys.path.append("../ctpn")
 from data_generator import generator
 from local_utils import data_utils
-import numpy as np
+import cv2,numpy as np
+from .image_enhance import enhance
+import time, random, os
+from multiprocessing import Process,Queue
 
 POSSIBILITY_CUT_EDGE = 0.1 # 10%的概率，会缺少个边
 MAX_CUT_EDGE = 4           # 最大的边的缺的像素
@@ -35,35 +37,63 @@ def rectangle_w_h(points):
     # if DEBUG: print("x_min:%f,x_max:%f,y_min:%f,y_max:%f" %(x_min,x_max,y_min,y_max))
     return int(x_max - x_min), int(y_max - y_min)
 
-def main(save_path, num, label_file,charset,all_bg_images):
+def create_image(queue,save_path,id,task_num, charset,all_bg_images):
 
-    words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
-    # points,返回的是仿射的4个点，不是矩形，是旋转了的
+    for num in range(task_num):
+        words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
+        # points,返回的是仿射的4个点，不是矩形，是旋转了的
 
-    # 弄一个矩形框包裹他
-    width , height = rectangle_w_h(points)
+        # 弄一个矩形框包裹他
+        width , height = rectangle_w_h(points)
 
-    # 生成一张背景图片，剪裁好
-    background_image = create_backgroud_image(
-                        random.choice(all_bg_images),
-                        width,
-                        height)
+        # 生成一张背景图片，剪裁好
+        background_image = create_backgroud_image(
+                            random.choice(all_bg_images),
+                            width,
+                            height)
 
-    offset = 0
-    if np.random.choice([True, False], p=[POSSIBILITY_CUT_EDGE, 1 - POSSIBILITY_CUT_EDGE]):
-        offset = random.randint(-MAX_CUT_EDGE,MAX_CUT_EDGE)
+        offset = 0
+        if np.random.choice([True, False], p=[POSSIBILITY_CUT_EDGE, 1 - POSSIBILITY_CUT_EDGE]):
+            offset = random.randint(-MAX_CUT_EDGE,MAX_CUT_EDGE)
 
-    background_image.paste(words_image, (0,offset), words_image)
+        background_image.paste(words_image, (0,offset), words_image)
 
-    # 保存文本信息和对应图片名称
-    image_file_name = str(num) + '.png'
-    save_path = os.path.join(save_path, image_file_name)
-    if DEBUG: print("文件名：%s" % save_path)
+        opencv_image =  cv2.cvtColor(np.asarray(background_image), cv2.COLOR_RGB2BGR)
 
-    label_file.write(save_path + " " + random_word + '\n')
+        # background_image.save(save_path)
+        enhance_image = enhance(opencv_image)
 
-    background_image.save(save_path)
+        # 保存文本信息和对应图片名称
+        image_file_name = str(id) + "_" + str(num) + '.png'
+        image_full_path = os.path.join(save_path, image_file_name)
+        cv2.imwrite(image_full_path,enhance_image)
 
+        image_file_name1 = str(id) + "_" + str(num) + '.原.png'
+        image_full_path1 = os.path.join(save_path, image_file_name1)
+        cv2.imwrite(image_full_path1,opencv_image)
+
+        queue.put({'name':image_full_path,'label':random_word})
+    queue.put({'name': None, 'label': None}) # 完成标志
+
+
+def save_label(queue,worker,label_file_name):
+    label_file = open(label_file_name, 'w', encoding='utf-8')
+    counter = 0
+    while (True):
+        data = queue.get()
+        image_full_path = data['name']
+        label = data['label']
+
+        if image_full_path is None:
+            counter+= 1
+            if counter >= worker:
+                print("完成了所有的样本生成")
+                break
+            else:
+                continue
+
+        label_file.write(image_full_path + " " + label + '\n')
+    label_file.close()
 
 # 注意：需要在根目录下运行，存到 /data/train目录下
 if __name__ == '__main__':
@@ -74,6 +104,7 @@ if __name__ == '__main__':
     parser.add_argument("--type")
     parser.add_argument("--dir")
     parser.add_argument("--num")
+    parser.add_argument("--worker")
     parser.add_argument("--charset")#"charset.6883.txt"
 
     args = parser.parse_args()
@@ -81,7 +112,6 @@ if __name__ == '__main__':
     DATA_DIR = args.dir
     TYPE= args.type
     charset_file_name= args.charset
-
     if not os.path.exists(args.charset):
         print("字符集文件[%s]不存在" % args.charset)
         exit(-1)
@@ -91,19 +121,26 @@ if __name__ == '__main__':
 
     # 同时生成label，记录下你生成标签文件名
     label_file_name = os.path.join(DATA_DIR,TYPE+".txt")
-    label_file = open(label_file_name, 'w', encoding='utf-8')
     total = int(args.num)
-
+    worker = int(args.worker)
+    task_num = total // worker # 每个进程应该处理的个数
     # 加载字符集
     charset = data_utils.get_charset(charset_file_name)
-
     # 预先加载所有的纸张背景
     all_bg_images = generator.load_all_backgroud_images(os.path.join('../ctpn/data_generator/background/'))
-
     # 生成图片数据
     label_dir = os.path.join(DATA_DIR,TYPE)
-    for num in range(0,total):
-        main(label_dir, num, label_file,charset,all_bg_images)
-        if DEBUG: print("--------------------")
-        if num % 1000 == 0:
-            print('生成了样本[%d/%d]'%(num,total))
+
+    producers = []
+    queue = Queue()
+    for i in range(worker):
+        p = Process(target=create_image, args=(queue,label_dir,i,task_num,charset,all_bg_images))
+        producers.append(p)
+        p.start()
+        p.join()
+
+    consumer = Process(target=save_label, args=(queue,worker,label_file_name))
+    consumer.start()
+    consumer.join()
+
+    print("样本生成完成")
