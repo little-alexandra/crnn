@@ -9,7 +9,8 @@ from multiprocessing import Process,Queue
 
 POSSIBILITY_CUT_EDGE = 0.1 # 10%的概率，会缺少个边
 MAX_CUT_EDGE = 4           # 最大的边的缺的像素
-
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 DEBUG = True
 
@@ -21,11 +22,26 @@ DEBUG = True
 '''
 
 # 生成一张图片
-def create_backgroud_image(bground, width, height):
-    if DEBUG: print("width, height: %d,%d" % (width, height))
+def create_backgroud_image(all_bg_images, width, height):
+    bground = random.choice(all_bg_images)
+    # if DEBUG: print("width, height: %d,%d" % (width, height))
     # 在大图上随机产生左上角
     x = random.randint(0,bground.size[0]-width)
     y = random.randint(0,bground.size[1]-height)
+
+    retry = 0
+    # print(x,",",y)
+    # print(width, ",", height)
+    while (x<0 or y<0):
+        print("[ERROR] 这张图太小了，换一张")
+        bground = random.choice(all_bg_images)
+        x = random.randint(0, bground.size[0] - width)
+        y = random.randint(0, bground.size[1] - height)
+        retry+=1
+        if retry>=3:
+            print("[ERROR] 尝试3次，无法找到合适的背景，放弃")
+            return None
+
     bground = bground.crop((x, y, x+width, y+height))
     return bground
 
@@ -40,39 +56,47 @@ def rectangle_w_h(points):
 def create_image(queue,save_path,id,task_num, charset,all_bg_images):
 
     for num in range(task_num):
-        words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
-        # points,返回的是仿射的4个点，不是矩形，是旋转了的
+        try:
+            words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
+            # points,返回的是仿射的4个点，不是矩形，是旋转了的
 
-        # 弄一个矩形框包裹他
-        width , height = rectangle_w_h(points)
+            # 弄一个矩形框包裹他
+            width , height = rectangle_w_h(points)
 
-        # 生成一张背景图片，剪裁好
-        background_image = create_backgroud_image(
-                            random.choice(all_bg_images),
-                            width,
-                            height)
+            # 生成一张背景图片，剪裁好
+            background_image = create_backgroud_image(
+                                all_bg_images,
+                                width,
+                                height)
 
-        offset = 0
-        if np.random.choice([True, False], p=[POSSIBILITY_CUT_EDGE, 1 - POSSIBILITY_CUT_EDGE]):
-            offset = random.randint(-MAX_CUT_EDGE,MAX_CUT_EDGE)
+            if background_image is None:
+                print("[ERROR] 样本字符尝试寻找背景失败，放弃：%s" % random_word)
+                continue
 
-        background_image.paste(words_image, (0,offset), words_image)
+            offset = 0
+            if np.random.choice([True, False], p=[POSSIBILITY_CUT_EDGE, 1 - POSSIBILITY_CUT_EDGE]):
+                offset = random.randint(-MAX_CUT_EDGE,MAX_CUT_EDGE)
 
-        opencv_image =  cv2.cvtColor(np.asarray(background_image), cv2.COLOR_RGB2BGR)
+            background_image.paste(words_image, (0,offset), words_image)
 
-        # background_image.save(save_path)
-        enhance_image = enhance(opencv_image)
+            opencv_image =  cv2.cvtColor(np.asarray(background_image), cv2.COLOR_RGB2BGR)
 
-        # 保存文本信息和对应图片名称
-        image_file_name = str(id) + "_" + str(num) + '.png'
-        image_full_path = os.path.join(save_path, image_file_name)
-        cv2.imwrite(image_full_path,enhance_image)
+            # background_image.save(save_path)
+            enhance_image = enhance(opencv_image)
 
-        image_file_name1 = str(id) + "_" + str(num) + '.原.png'
-        image_full_path1 = os.path.join(save_path, image_file_name1)
-        cv2.imwrite(image_full_path1,opencv_image)
+            # 保存文本信息和对应图片名称
+            image_file_name = str(id) + "_" + str(num) + '.png'
+            image_full_path = os.path.join(save_path, image_file_name)
+            cv2.imwrite(image_full_path,enhance_image)
 
-        queue.put({'name':image_full_path,'label':random_word})
+            # 调试用
+            # image_file_name1 = str(id) + "_" + str(num) + '.原.png'
+            # image_full_path1 = os.path.join(save_path, image_file_name1)
+            # cv2.imwrite(image_full_path1,opencv_image)
+
+            queue.put({'name':image_full_path,'label':random_word})
+        except Exception as e:
+            print("样本生成发生错误，忽略此错误，继续....",str(e))
     queue.put({'name': None, 'label': None}) # 完成标志
 
 
@@ -80,19 +104,23 @@ def save_label(queue,worker,label_file_name):
     label_file = open(label_file_name, 'w', encoding='utf-8')
     counter = 0
     while (True):
-        data = queue.get()
-        image_full_path = data['name']
-        label = data['label']
+        try:
+            data = queue.get()
+            image_full_path = data['name']
+            label = data['label']
 
-        if image_full_path is None:
-            counter+= 1
-            if counter >= worker:
-                print("完成了所有的样本生成")
-                break
-            else:
-                continue
+            if image_full_path is None:
+                counter+= 1
+                if counter >= worker:
+                    print("完成了所有的样本生成")
+                    break
+                else:
+                    continue
+            label_file.write(image_full_path + " " + label + '\n')
+        except Exception as e:
+            print("样本保存发生错误，忽略此错误，继续....",str(e))
 
-        label_file.write(image_full_path + " " + label + '\n')
+
     label_file.close()
 
 # 注意：需要在根目录下运行，存到 /data/train目录下
@@ -137,10 +165,8 @@ if __name__ == '__main__':
         p = Process(target=create_image, args=(queue,label_dir,i,task_num,charset,all_bg_images))
         producers.append(p)
         p.start()
-        p.join()
 
     consumer = Process(target=save_label, args=(queue,worker,label_file_name))
     consumer.start()
-    consumer.join()
 
     print("样本生成完成")

@@ -138,6 +138,7 @@ def dilate(img):
     return img
 
 enhance_method = [
+    {"name": "原图", 'fun': None},
     {"name": "2D", 'fun': filer2d},
     {"name": "均值", 'fun': filer_avg},
     {"name": "高斯", 'fun': filter_gaussian},
@@ -154,22 +155,22 @@ enhance_method = [
     {"name": "SP噪音", 'fun': noise_sp},
     {"name": "speckle噪音", 'fun': noise_speckle},
     {"name": "腐蚀", 'fun': erode},
-    # {"name": "膨胀", 'fun': dilate},
+    {"name": "膨胀", 'fun': dilate},
     {"name": "噪音", 'fun': noise},
     {"name": "变暗", 'fun': darker},
-    # {"name": "变亮", 'fun': brighter} #没啥用，反倒丢了纸质的特征
-
 ]
 
 
 # 测试用
-enhance_method = [
-    {"name": "膨胀", 'fun': dilate}
-]
+# enhance_method = [
+#     {"name": "膨胀", 'fun': dilate}
+# ]
 
 
 def enhance(img):
     method = random.choice(enhance_method)
+    if method['fun'] is None: return img # 也需要一部分原图
+
     dst_image = method['fun'](img)
     print("图像增强：", method['name'])
     return dst_image
