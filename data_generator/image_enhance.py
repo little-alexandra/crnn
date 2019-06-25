@@ -3,6 +3,8 @@ from skimage import exposure
 from skimage import io
 from skimage import util
 
+SMALL_KERNEL_WIDTH = 100
+
 def sharpen(image):
     kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], np.float32)  # 锐化
     dst = cv2.filter2D(image, -1, kernel=kernel)
@@ -14,26 +16,38 @@ def save_image(original_name,type,dst_image):
     print("保存图像：",f_name)
     cv2.imwrite(f_name,dst_image)
 
+
+def _kernel(image):
+    kernel = random.choice([(2, 1), (1, 2)])
+    print("Kernel:",kernel)
+    return kernel
+
 def filer2d(image):
-    k = random.choice([2,3])
-    kernel = np.ones((k,k), np.float32) / 9
+    k = _kernel(image)
+    # print("2D:",k)
+    kernel = np.ones(k, np.float32) / (k[0] * k[1])
     return cv2.filter2D(image, -1, kernel)
 
 def filer_avg(img):
-    blur = cv2.blur(img, (3, 3))  # 模板大小为3*5, 模板的大小是可以设定的
-    box = cv2.boxFilter(img, -1, (3, 3))
+    k = _kernel(img)
+    blur = cv2.blur(img, k)  # 模板大小为3*5, 模板的大小是可以设定的
+    # box = cv2.boxFilter(img, -1, (3, 3))
     return blur
 
 def filter_gaussian(img):
-    blur = cv2.GaussianBlur(img, (3, 3), 0)  # （5,5）表示的是卷积模板的大小，0表示的是沿x与y方向上的标准差
+    # 原来内核大小只支持奇数
+    k = random.choice([(3, 1), (1, 3), (3, 3)])
+    blur = cv2.GaussianBlur(img, k, 0)  # （5,5）表示的是卷积模板的大小，0表示的是沿x与y方向上的标准差
     return blur
 
 def filter_median(img):
-    blur = cv2.medianBlur(img, 3)  # 中值滤波函数
+    k = random.choice([1,2,3])
+    print("median:",k)
+    blur = cv2.medianBlur(img,k)  # 中值滤波函数
     return blur
 
 def filter_bi(img):
-    blur = cv2.bilateralFilter(img, 5, 40, 40)
+    blur = cv2.bilateralFilter(img, 3, 5, 5)
     return blur
 
 # 曝光处理：参考：https://blog.csdn.net/limiyudianzi/article/details/86980680
@@ -66,7 +80,7 @@ def noise_salt(image):
 
 def noise_pepper(image):
     temp = util.random_noise(image,mode='pepper')
-    return np.array(temp*255, dtype = np.uint8)
+    return np.array(temp * 255, dtype = np.uint8)
 
 def noise_sp(image):
     temp = util.random_noise(image,mode='s&p')
@@ -126,26 +140,29 @@ def noise(img):
 # 腐蚀和膨胀：https://blog.csdn.net/hjxu2016/article/details/77837765
 
 def erode(img):
-    kernel_size = random.choice([(1,2),(2,1),(2,2)])
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,kernel_size)
+    k = _kernel(img)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,k)
     img = cv2.erode(img,kernel)
     return img
 
 def dilate(img):
-    kernel_size = random.choice([(1, 2), (2, 1), (2, 2)])
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,kernel_size)
+    k = _kernel(img)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT,k)
     img = cv2.dilate(img,kernel)
     return img
 
+def original(image):
+    return image
+
 enhance_method = [
-    {"name": "原图", 'fun': None},
+    {"name": "原图", 'fun': original},
     {"name": "2D", 'fun': filer2d},
     {"name": "均值", 'fun': filer_avg},
     {"name": "高斯", 'fun': filter_gaussian},
-    {"name": "中值", 'fun': filter_median},
+    # {"name": "中值", 'fun': filter_median},不行，很多字都看不清楚了
     {"name": "双边", 'fun': filter_bi},
-    {"name": "直方图", 'fun': hist},
-    {"name": "自适应直方图", 'fun': adapthist},
+    # {"name": "直方图", 'fun': hist},           # 这个在做人工标注的样本的时候，效果非常次，所以注释掉了
+    # {"name": "自适应直方图", 'fun': adapthist}, # 这个在做人工标注的样本的时候，效果非常次，所以注释掉了
     {"name": "gamma", 'fun': gamma},
     {"name": "sigmod", 'fun': sigmoid},
     {"name": "锐化", 'fun': sharpen},
@@ -169,10 +186,8 @@ enhance_method = [
 
 def enhance(img):
     method = random.choice(enhance_method)
-    if method['fun'] is None: return img # 也需要一部分原图
-
     dst_image = method['fun'](img)
-    print("图像增强：", method['name'])
+    print("增强：", method['name'])
     return dst_image
 
 

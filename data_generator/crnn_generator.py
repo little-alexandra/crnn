@@ -59,7 +59,7 @@ def create_image(queue,save_path,id,task_num, charset,all_bg_images):
         try:
             words_image, _, _, random_word, points = generator.create_one_sentence_image(charset)
             # points,返回的是仿射的4个点，不是矩形，是旋转了的
-
+            print("文字：",random_word)
             # 弄一个矩形框包裹他
             width , height = rectangle_w_h(points)
 
@@ -87,6 +87,7 @@ def create_image(queue,save_path,id,task_num, charset,all_bg_images):
             # 保存文本信息和对应图片名称
             image_file_name = str(id) + "_" + str(num) + '.png'
             image_full_path = os.path.join(save_path, image_file_name)
+            print("图像：",image_file_name)
             cv2.imwrite(image_full_path,enhance_image)
 
             # 调试用
