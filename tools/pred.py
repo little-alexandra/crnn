@@ -12,11 +12,11 @@ from config import config
 from local_utils import log_utils, data_utils, image_util
 import tensorflow as tf
 import numpy as np
+import logging
 
 FLAGS = tf.app.flags.FLAGS
 
-logger = log_utils.init_logger()
-
+logger = logging.getLogger("Pred")
 
 # 初始化3任务：1、构建图 2、加载model=>session 3、加载字符集，都放到全局变量里
 def initialize(beam_width=config.BEAM_WIDTH):
@@ -232,7 +232,7 @@ if __name__ == '__main__':
     tf.app.flags.DEFINE_string('label', None, '')
     tf.app.flags.DEFINE_string('resize_mode', 'PAD', '')
     tf.app.flags.DEFINE_integer('beam_width', 1, '')
-
+    logger = log_utils.init_logger()
 
     if not os.path.exists(FLAGS.charset):
         logger.error("字符集文件[%s]不存在",FLAGS.charset)
