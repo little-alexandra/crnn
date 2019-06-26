@@ -38,7 +38,7 @@ else
         -m tools.train \
         --data_dir=data/ \
         --train_batch=64 \
-        --train_steps=10000000 \
+        --train_steps=1000000000 \
         --train_num_threads=4 \
         --model=LATEST \
         --learning_rate=0.001 \
@@ -49,7 +49,7 @@ else
         --validate_steps=1000 \
         --validate_file=data/test.txt \
         --validate_batch=32 \
-        --validate_num=50 \
+        --validate_num=20 \
         --validate_num_threads=1 \
         --early_stop=100 \
         --tboard_dir=tboard \

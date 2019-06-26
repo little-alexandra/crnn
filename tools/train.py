@@ -161,7 +161,7 @@ def train():
 
                 # validate一下
                 if epoch % FLAGS.validate_steps == 0:
-                    _edit_distance = validate(epoch,
+                    _accuracy = validate(epoch,
                                              summary_writer,
                                              accuracy,
                                              charset,
@@ -172,7 +172,7 @@ def train():
                                              validate_data_generator,
                                              validate_decode,
                                              validate_summary_op)
-                    if is_need_early_stop(early_stop,-_edit_distance,saver,sess,epoch): break # 用负的编辑距离
+                    if is_need_early_stop(early_stop,_accuracy,saver,sess,epoch): break # 用负的编辑距离
 
                 _, ctc_lost, t_summary = sess.run([optimizer, cost, train_summary_op],
                     feed_dict={ input_image:data_images,
@@ -222,7 +222,7 @@ def validate(epoch,summary_writer,accuracy, charset, edit_distance, input_image,
     summary_writer.add_summary(summary=v_summary, global_step=epoch)
     logger.info("Validate %d张样本和%d预测计算结果：正确率 %f,编辑距离 %f", len(labels),len(preds), _accuracy, _edit_distance)
     logger.info('Epoch检验(validate)结束，耗时：%d 秒', time.time() - start)
-    return _edit_distance
+    return _accuracy
 
 
 def is_need_early_stop(early_stop,value,saver,sess,step):
