@@ -79,7 +79,7 @@ def load_or_init_model(saver,sess):
         return True
     else:
         if FLAGS.model == "LATEST":  # 如果是自动寻找最新的
-            crnn_model_file_path = data_utils.get_latest_model(FLAGS.crnn_model_dir)
+            crnn_model_file_path = data_utils.get_latest_model(model_dir)
         else:
             crnn_model_file_path = os.path.join(model_dir, FLAGS.model)
 
