@@ -19,12 +19,14 @@ FLAGS = tf.app.flags.FLAGS
 logger = logging.getLogger("Pred")
 
 # 初始化3任务：1、构建图 2、加载model=>session 3、加载字符集，都放到全局变量里
-def initialize(beam_width=config.BEAM_WIDTH):
+def initialize(sess=None,beam_width=config.BEAM_WIDTH):
 
     # 为了在不同的web请求间共享信息，需要把这些张量变量共享成全局变量
     global charset, decodes, prob, inputdata,batch_size
-
     g = tf.Graph()
+    if not sess:
+        sess = tf.Session(graph=g)
+
     with g.as_default():
         # num_classes = len(codec.reader.char_dict) + 1 if num_classes == 0 else num_classes#这个是在读词表，37个类别，没想清楚？？？为何是37个，26个字母+空格不是37个，噢，对了，还有数字0-9
         charset  = data_utils.get_charset(FLAGS.charset)
@@ -35,7 +37,7 @@ def initialize(beam_width=config.BEAM_WIDTH):
         # config tf session
         saver = tf.train.Saver()
         logger.debug("创建crnn saver")
-        sess = tf.Session(graph=g)
+
 
         if FLAGS.crnn_model_file:
             print(FLAGS.crnn_model_file)
@@ -94,7 +96,7 @@ def recognize():
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
-    sess = initialize(FLAGS.beam_width)
+    sess = initialize(beam_width=FLAGS.beam_width)
 
     preds,probs = pred(image_list,16,sess)
 
