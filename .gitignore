@@ -12,6 +12,7 @@ logs/
 *.so
 
 data_generator/background/
+data_generator/font/
 data/train
 data/test
 data/validate

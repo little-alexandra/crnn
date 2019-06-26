@@ -17,6 +17,7 @@ from local_utils.log_utils import  _p_shape,_p
 import re,cv2,logging
 from Levenshtein import *
 from local_utils.preprocess_utils import image_resize_with_pad
+import os
 
 logger = log_utils.init_logger()
 
@@ -401,6 +402,28 @@ def convert_label_to_id(label, charsets):
             return None
         label_index.append(charsets.index(l))
     return label_index
+
+
+def get_latest_model(dir):
+    latest_model_index = None # index文件名字
+    latest_model_name = None  # model名字，不包含后缀名，这个是model加载需要的
+    latest_time = -9999999
+    for file_name in os.listdir(dir):
+        prefix, subfix = os.path.splitext(file_name)
+        if subfix.lower() not in ['.index']: continue
+        file_full_path = os.path.join(dir,file_name)
+        mtime = os.stat(file_full_path).st_mtime
+        # print(mtime)
+        if mtime>latest_time:
+            latest_model_index = file_name
+            latest_model_name  = prefix
+            latest_time = mtime
+            # file_modify_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))
+    if not latest_model_index:
+        raise ValueError("无法从目录[%s]中找到最新的模型文件",dir)
+
+    logger.debug("在目录%s中找到最新的模型文件：%s",dir,latest_model_name)
+    return os.path.join(dir,latest_model_name)
 
 
 # 按照List中最大长度扩展label

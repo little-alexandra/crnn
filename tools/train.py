@@ -78,12 +78,16 @@ def load_or_init_model(saver,sess):
         sess.run(init)
         return True
     else:
-        model_name = os.path.join(model_dir, FLAGS.model)
-        if not os.path.exists(model_name+".meta"):
-            logger.error("模型文件[%s]不存在",model_name)
+        if FLAGS.model == "LATEST":  # 如果是自动寻找最新的
+            crnn_model_file_path = data_utils.get_latest_model(FLAGS.crnn_model_dir)
+        else:
+            crnn_model_file_path = os.path.join(model_dir, FLAGS.model)
+
+        if not os.path.exists(crnn_model_file_path+".meta"):
+            logger.error("模型文件[%s]不存在",crnn_model_file_path)
             return False
-        logger.info('从文件[%s]恢复模型，继续训练',model_name)
-        saver.restore(sess=sess, save_path=model_name)
+        logger.info('从文件[%s]恢复模型，继续训练',crnn_model_file_path)
+        saver.restore(sess=sess, save_path=crnn_model_file_path)
         return True
 
 

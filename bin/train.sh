@@ -40,10 +40,10 @@ else
         --train_batch=64 \
         --train_steps=10000000 \
         --train_num_threads=4 \
-        --model=crnn_2019-06-18-07-54-18.ckpt-405000 \
+        --model=LATEST \
         --learning_rate=0.001 \
         --label_file=data/train.txt \
-        --charset=charset.6883.txt \
+        --charset=charset.3770.txt \
         --name=crnn \
         --resize_mode=PAD \
         --validate_steps=1000 \

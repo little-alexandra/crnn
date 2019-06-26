@@ -40,7 +40,7 @@ def initialize(beam_width=config.BEAM_WIDTH):
         if FLAGS.crnn_model_file:
             print(FLAGS.crnn_model_file)
             if FLAGS.crnn_model_file=="LATEST":#如果是自动寻找最新的
-                crnn_model_file_path = get_latest_model(FLAGS.crnn_model_dir)
+                crnn_model_file_path = data_utils.get_latest_model(FLAGS.crnn_model_dir)
             else:
                 crnn_model_file_path = os.path.join(FLAGS.crnn_model_dir, FLAGS.crnn_model_file)
 
@@ -154,26 +154,6 @@ def prepare_data(image_list):
     return np.stack(input_data,axis=0)
 
 
-def get_latest_model(dir):
-    latest_model_index = None # index文件名字
-    latest_model_name = None  # model名字，不包含后缀名，这个是model加载需要的
-    latest_time = -9999999
-    for file_name in os.listdir(dir):
-        prefix, subfix = os.path.splitext(file_name)
-        if subfix.lower() not in ['.index']: continue
-        file_full_path = os.path.join(dir,file_name)
-        mtime = os.stat(file_full_path).st_mtime
-        # print(mtime)
-        if mtime>latest_time:
-            latest_model_index = file_name
-            latest_model_name  = prefix
-            latest_time = mtime
-            # file_modify_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))
-    if not latest_model_index:
-        raise ValueError("无法从目录[%s]中找到最新的模型文件",dir)
-
-    logger.debug("在目录%s中找到最新的模型文件：%s",dir,latest_model_name)
-    return os.path.join(dir,latest_model_name)
 
 
 
