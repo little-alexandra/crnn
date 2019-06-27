@@ -19,14 +19,12 @@ FLAGS = tf.app.flags.FLAGS
 logger = logging.getLogger("Pred")
 
 # 初始化3任务：1、构建图 2、加载model=>session 3、加载字符集，都放到全局变量里
-def initialize(sess=None,beam_width=config.BEAM_WIDTH):
+def initialize(beam_width=config.BEAM_WIDTH):
 
     # 为了在不同的web请求间共享信息，需要把这些张量变量共享成全局变量
     global charset, decodes, prob, inputdata,batch_size
-    g = tf.Graph()
-    if not sess:
-        sess = tf.Session(graph=g)
 
+    g = tf.Graph()
     with g.as_default():
         # num_classes = len(codec.reader.char_dict) + 1 if num_classes == 0 else num_classes#这个是在读词表，37个类别，没想清楚？？？为何是37个，26个字母+空格不是37个，噢，对了，还有数字0-9
         charset  = data_utils.get_charset(FLAGS.charset)
@@ -37,7 +35,7 @@ def initialize(sess=None,beam_width=config.BEAM_WIDTH):
         # config tf session
         saver = tf.train.Saver()
         logger.debug("创建crnn saver")
-
+        sess = tf.Session(graph=g)
 
         if FLAGS.crnn_model_file:
             print(FLAGS.crnn_model_file)
@@ -96,7 +94,7 @@ def recognize():
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
-    sess = initialize(beam_width=FLAGS.beam_width)
+    sess = initialize(FLAGS.beam_width)
 
     preds,probs = pred(image_list,16,sess)
 
@@ -132,12 +130,14 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         logger.debug("CTC输入网络的维度为：%r",net_out.get_shape().as_list())
 
         # inputs: 3-D tensor,shape[max_time x batch_size x num_classes]
-        decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
-                                                      beam_width=beam_width,
-                                                      sequence_length = batch_size,
-                                                      merge_repeated=False)
+        # decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
+        #                                               beam_width=beam_width,
+        #                                               sequence_length = batch_size,
+        #                                               merge_repeated=False)
                                                       #sequence_length=np.array(batch*[config.SEQ_LENGTH]),
-
+        decodes, prob = tf.nn.ctc_greedy_decoder(inputs=net_out,
+                                                      sequence_length=batch_size,
+                                                      merge_repeated=False)
 
         return decodes,prob,inputdata,batch_size
 

@@ -16,9 +16,10 @@ from tensorflow.contrib import rnn
 from local_utils import log_utils
 from crnn_model import cnn_basenet
 from local_utils.log_utils import  _p_shape
+import logging
 
 FLAGS = tf.app.flags.FLAGS
-logger = log_utils.init_logger()
+logger = logging.getLogger("ShadowNet")
 
 class ShadowNet(cnn_basenet.CNNBaseModel):
     """
@@ -217,6 +218,8 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
             stack_lstm_layer, _, _ = rnn.stack_bidirectional_dynamic_rnn(fw_cell_list, bw_cell_list, inputdata,
                                                                          sequence_length = sequence_len,
                                                                          dtype=tf.float32)
+            stack_lstm_layer = _p_shape(stack_lstm_layer, "Bi-LSTM计算完输出")
+
             # Bi-LSTM，输入是[N*H , W , 512]，输出是[N*H , W , 512]
             # 为何呢？因为隐含层是256，输出是256维度，但是由于是Bi-LSTM，俩LSTM要concat到一起，得~，变成512了又
 
@@ -239,11 +242,14 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
 
             logits = tf.matmul(rnn_reshaped, w) # 全连接
 
+            logits = _p_shape(logits, "全连接计算输出")
+
             # [batch,W*H,class_num]
             logits = tf.reshape(logits,[ batch_s, -1, self.__num_classes]) #reshape回来，折腾啥呢
 
             #看！做softmax呢，小样！我一直等着你呢，卧槽，还求了个argmax，得到最大的可能的那个字符了？
             raw_pred = tf.argmax(tf.nn.softmax(logits), axis=2, name='raw_prediction')
+            raw_pred = _p_shape(raw_pred, "Softmax计算输出")
 
             # Swap batch and batch axis 转置(1, 0, 2)，=>列没变，行和高置换，也就是 （batch,rnn length,class)=>（rnn length,batch,class)
             # transpose(0,1,2)=>(1,0,2)，就是维度0和维度1互换了，呢，变成了[N,W*H, Cls]
@@ -262,10 +268,11 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         # 是一个20层的卷积网络，返回的是 [W/16,H/4,512] 的结果
         # 对了，输入的高度被归一化成32了
         cnn_out = self.__feature_sequence_extraction(inputdata=inputdata)
-        cnn_out = _p_shape(cnn_out,"CNN网络抽取了特征后的输出")
+        cnn_out = _p_shape(cnn_out,"CNN网络抽取了特征")
 
         # second apply the map to sequence stage
         sequence = self.__map_to_sequence(inputdata=cnn_out)
+
 
         # third apply the sequence label stage
         net_out, raw_pred = self.__sequence_label(inputdata=sequence,sequence_len=sequence_len)

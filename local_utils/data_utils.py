@@ -18,8 +18,10 @@ import re,cv2,logging
 from Levenshtein import *
 from local_utils.preprocess_utils import image_resize_with_pad
 import os
+import logging
 
-logger = log_utils.init_logger()
+logger = logging.getLogger("Data_Util")
+
 
 FLAGS = tf.app.flags.FLAGS
 

@@ -36,8 +36,7 @@ def _p_shape(tensor,msg):
 def init_logger(level=logging.DEBUG,
                 when="D",
                 backup=7,
-                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d行 %(message)s",
-                datefmt="%Y-%m-%d %H:%M:%S"):
+                _format="%(levelname)s: %(asctime)s: %(filename)s:%(lineno)d行 %(message)s"):
     log_path = ops.join(os.getcwd(), 'logs/shadownet.log')
     _dir = os.path.dirname(log_path)
     if not os.path.isdir(_dir):
@@ -45,7 +44,7 @@ def init_logger(level=logging.DEBUG,
 
     logger = logging.getLogger()
     if not logger.handlers:
-        formatter = logging.Formatter(_format, datefmt)
+        formatter = logging.Formatter(_format)
         logger.setLevel(level)
 
         handler = handlers.TimedRotatingFileHandler(log_path, when=when, backupCount=backup)
