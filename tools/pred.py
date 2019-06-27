@@ -135,9 +135,11 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         #                                               sequence_length = batch_size,
         #                                               merge_repeated=False)
                                                       #sequence_length=np.array(batch*[config.SEQ_LENGTH]),
+        # ctc_beam_search_decoder太TMD慢了，ctc_greedy_decoder太TMD快了
+        # 不是beam=1就是greedy么?!8(
         decodes, prob = tf.nn.ctc_greedy_decoder(inputs=net_out,
-                                                      sequence_length=batch_size,
-                                                      merge_repeated=False)
+                                                  sequence_length=batch_size,
+                                                  merge_repeated=False)
 
         return decodes,prob,inputdata,batch_size
 
