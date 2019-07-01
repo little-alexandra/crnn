@@ -19,7 +19,7 @@ FLAGS = tf.app.flags.FLAGS
 logger = logging.getLogger("Pred")
 
 # 初始化3任务：1、构建图 2、加载model=>session 3、加载字符集，都放到全局变量里
-def initialize(beam_width=config.BEAM_WIDTH):
+def initialize(config,beam_width=config.BEAM_WIDTH):
 
     # 为了在不同的web请求间共享信息，需要把这些张量变量共享成全局变量
     global charset, decodes, prob, inputdata,batch_size
@@ -35,7 +35,7 @@ def initialize(beam_width=config.BEAM_WIDTH):
         # config tf session
         saver = tf.train.Saver()
         logger.debug("创建crnn saver")
-        sess = tf.Session(graph=g)
+        sess = tf.Session(graph=g,config=config)
 
         if FLAGS.crnn_model_file:
             print(FLAGS.crnn_model_file)
