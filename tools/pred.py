@@ -51,7 +51,7 @@ def initialize(config,beam_width=config.BEAM_WIDTH):
             logger.debug("最新CRNN模型目录中最新模型文件:%s", ckpt)  # 有点担心learning rate也被恢复
             saver.restore(sess, ckpt)
 
-    return sess
+    return sess,g
 
 
 def recognize():
@@ -162,7 +162,7 @@ def prepare_data(image_list):
 
 
 # 输入是图像numpy数据，注意，顺序是RGB，注意OpenCV read的数据是BGR，要提前转化后再传给我
-def pred(image_list,_batch_size,sess):
+def pred(image_list,_batch_size,sess,graph=None):
     global charset, decodes, prob, inputdata, batch_size
 
     logger.debug("开始预测，需要预测的图片有%d张，一个批次为%d",len(image_list),_batch_size)
@@ -187,20 +187,21 @@ def pred(image_list,_batch_size,sess):
         # 长度是batch个，数组每个元素是sequence长度，也就是64个像素 [64,64,...64]一共batch个。
         _batch_size_array = np.array(count * [config.SEQ_LENGTH]).astype(np.int32)
 
-        with sess.as_default():
-            preds,_prob = sess.run(
-                [decodes,prob],
-                feed_dict={
-                    inputdata :_input_data,
-                    batch_size:_batch_size_array # 这个是为了指导LSTM，以及CTC Beam Seach的参数
-                })
+        with graph.as_default():
+            with sess.as_default():
+                preds,_prob = sess.run(
+                    [decodes,prob],
+                    feed_dict={
+                        inputdata :_input_data,
+                        batch_size:_batch_size_array # 这个是为了指导LSTM，以及CTC Beam Seach的参数
+                    })
 
-            # 将结果，从张量变成字符串数组，session.run(arg)arg是啥类型，就ruturn啥类型
-            preds = data_utils.sparse_tensor_to_str(preds[0],charset)
-            logger.debug("预测结果为：%r",  preds)
-            # logger.debug("预测概率为：%r",  _prob.tolist())
-            pred_result+= preds
-            prob_result+= [p[0] for p in _prob]#0是贪心法的第一条
+                # 将结果，从张量变成字符串数组，session.run(arg)arg是啥类型，就ruturn啥类型
+                preds = data_utils.sparse_tensor_to_str(preds[0],charset)
+                logger.debug("预测结果为：%r",  preds)
+                # logger.debug("预测概率为：%r",  _prob.tolist())
+                pred_result+= preds
+                prob_result+= [p[0] for p in _prob]#0是贪心法的第一条
 
     return pred_result,prob_result
 

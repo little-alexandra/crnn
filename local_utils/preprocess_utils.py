@@ -1,8 +1,8 @@
 import tensorflow as tf
 from local_utils import log_utils
 import cv2
-
-logger = log_utils.init_logger()
+import logging
+logger = logging.getLogger("PreProcessUtil")
 
 
 def image_resize_with_pad(image, target_height, target_width, pad_val):
