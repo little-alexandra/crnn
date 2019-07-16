@@ -130,16 +130,16 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         logger.debug("CTC输入网络的维度为：%r",net_out.get_shape().as_list())
 
         # inputs: 3-D tensor,shape[max_time x batch_size x num_classes]
-        # decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
-        #                                               beam_width=beam_width,
-        #                                               sequence_length = batch_size,
-        #                                               merge_repeated=False)
+        decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=net_out,
+                                                      beam_width=beam_width,
+                                                      sequence_length = batch_size,
+                                                      merge_repeated=False)
                                                       #sequence_length=np.array(batch*[config.SEQ_LENGTH]),
         # ctc_beam_search_decoder太TMD慢了，ctc_greedy_decoder太TMD快了
         # 不是beam=1就是greedy么?!8(
-        decodes, prob = tf.nn.ctc_greedy_decoder(inputs=net_out,
-                                                  sequence_length=batch_size,
-                                                  merge_repeated=False)
+        # decodes, prob = tf.nn.ctc_greedy_decoder(inputs=net_out,
+        #                                           sequence_length=batch_size,
+        #                                           merge_repeated=False)
 
         return decodes,prob,inputdata,batch_size
 
