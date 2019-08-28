@@ -118,7 +118,7 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         h, w = config.INPUT_SIZE  # 32,256 H,W
         inputdata = tf.placeholder(dtype=tf.float32,
                                    shape=[None, h, w, 3],
-                                   name='input')
+                                   name='input_image')
         # 长度是batch个，数组每个元素是sequence长度，也就是64个像素 [64,64,...64]一共batch个。
         # 这里不定义，当做placeholder，后期session.run时候传入
         batch_size = tf.placeholder(tf.int32, shape=[None])
