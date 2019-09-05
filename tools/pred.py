@@ -141,7 +141,7 @@ def build_graph(g,charset,beam_width=config.BEAM_WIDTH):
         #                                           sequence_length=batch_size,
         #                                           merge_repeated=False)
 
-        return decodes,prob,inputdata,batch_size
+        return decodes[0],prob,inputdata,batch_size
 
 # 把传入的图片数组(opencv BGR格式的)转成神经网络的张量的样子=>[Batch,H,W,C]
 def prepare_data(image_list):
@@ -197,7 +197,7 @@ def pred(image_list,_batch_size,sess,graph=None):
                     })
 
                 # 将结果，从张量变成字符串数组，session.run(arg)arg是啥类型，就ruturn啥类型
-                preds = data_utils.sparse_tensor_to_str(preds[0],charset)
+                preds = data_utils.sparse_tensor_to_str(preds,charset)
                 logger.debug("预测结果为：%r",  preds)
                 # logger.debug("预测概率为：%r",  _prob.tolist())
                 pred_result+= preds

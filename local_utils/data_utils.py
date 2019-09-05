@@ -8,14 +8,15 @@
 """
 Implement some utils used to convert image and it's corresponding label into tfrecords
 """
-import cv2
 import logging
 import os
 import re
 from typing import List
 
+import cv2
 import numpy as np
 import tensorflow as tf
+from Levenshtein import distance
 
 from config import config
 from local_utils.log_utils import _p_shape
@@ -59,6 +60,34 @@ def caculate_accuracy(preds, labels):
 '''
 
 
+# sparse_tensor 转换字符串 这个函数是新增的，对验证输出 sparse_tensor 分解为三个参数使用
+def sparse_tensor_to_str_new(sparse_tensor: tf.SparseTensor, characters) -> List[str]:
+    """
+    :param sparse_tensor: prediction or ground truth label
+    :return: String value of the sparse tensor
+    """
+    with tf.Session() as sess:
+        indices = sparse_tensor.indices.eval()
+        values = sparse_tensor.values.eval()  # <------------------------ 这个里面存的是string的id，所以要查找字符表，找到对应字符
+        dense_shape = sparse_tensor.dense_shape.eval()
+    values = np.array([characters[id] for id in values])
+
+    # 先初始化一个2维矩阵，用['\n']来填充，因为这个字符不会出现在结果里面，可以当做特殊字符来处理
+    # number_lists，实际上是一个dense向量
+    number_lists = np.array([['\n'] * dense_shape[1]] * dense_shape[0], dtype=values.dtype)
+    res = []
+
+    # 先把values，也就是有的值，拷贝到dense向量number_lists中
+    for i, index in enumerate(indices):
+        number_lists[index[0], index[1]] = values[i]
+
+    # 遍历这个dense的  number_list的每一行，变成一个字符数组
+    for one_row in number_lists:
+        res.append(''.join(c for c in one_row if c != '\n'))
+
+    return res
+
+
 def sparse_tensor_to_str(sparse_tensor: tf.SparseTensor, characters) -> List[str]:
     """
     :param sparse_tensor: prediction or ground truth label
@@ -66,8 +95,8 @@ def sparse_tensor_to_str(sparse_tensor: tf.SparseTensor, characters) -> List[str
     """
     indices = sparse_tensor.indices
     values = sparse_tensor.values  # <------------------------ 这个里面存的是string的id，所以要查找字符表，找到对应字符
-    values = np.array([characters[id] for id in values])
     dense_shape = sparse_tensor.dense_shape
+    values = np.array([characters[id] for id in values])
 
     # 先初始化一个2维矩阵，用['\n']来填充，因为这个字符不会出现在结果里面，可以当做特殊字符来处理
     # number_lists，实际上是一个dense向量

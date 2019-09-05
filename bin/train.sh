@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 Date=$(date +%Y%m%d%H%M)
 
 if [ "$1" = "stop" ]; then
@@ -19,7 +20,7 @@ if [ "$1" = "console" ]; then
         --train_num_threads=1 \
         --learning_rate=0.001 \
         --label_file=data/train.txt \
-        --charset=charset.6883.txt \
+        --charset=charset.3770.txt \
         --name=crnn \
         --resize_mode=PAD \
         --validate_steps=2 \
