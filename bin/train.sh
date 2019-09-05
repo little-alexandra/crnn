@@ -33,7 +33,7 @@ if [ "$1" = "console" ]; then
         --debug=True
 else
     echo "生产模式"
-    # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的
+    # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的 --model=LATEST \
     CUDA_VISIBLE_DEVICES=1 \
     nohup python \
         -m tools.train \
@@ -41,7 +41,6 @@ else
         --train_batch=64 \
         --train_steps=1000000000 \
         --train_num_threads=4 \
-        --model=LATEST \
         --learning_rate=0.001 \
         --label_file=data/train.txt \
         --charset=charset.3770.txt \
