@@ -340,8 +340,10 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         #       `A B B * B * B` (where '*' is the blank label), the return value is:
         #          * `A B` if `merge_repeated = True`.
         #          * `A B B B` if `merge_repeated = False`.
+        net_out = _p_shape(net_out, "CTC call,param:netout,beam_width:" + str(config.BEAM_WIDTH))
         decoded, _ = tf.nn.ctc_beam_search_decoder(net_out,
                                                      beam_width=config.BEAM_WIDTH,
                                                      sequence_length=batch_size,
                                                      merge_repeated=False)
+        decoded = _p_shape(decoded,"CTC return value")
         return decoded

@@ -15,7 +15,7 @@ from tools.early_stop import EarlyStop
 from utils.data_factory import DataFactory
 
 tf.app.flags.DEFINE_string( 'name', 'CRNN', 'no use ,just a flag for shell batch')
-tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
+tf.app.flags.DEFINE_boolean('debug', True, 'debug mode')
 tf.app.flags.DEFINE_string( 'data_dir','data/train','')
 tf.app.flags.DEFINE_integer('train_batch',64,'')
 tf.app.flags.DEFINE_integer('train_steps',1000000,'')
