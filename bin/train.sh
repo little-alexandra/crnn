@@ -2,7 +2,7 @@ Date=$(date +%Y%m%d%H%M)
 
 if [ "$1" = "stop" ]; then
     echo "停止训练"
-    kill -9 `ps aux|grep python|grep name=crnn| grep -v grep|awk '{print $2}'`
+    kill -9 `ps aux|grep python|grep name=crnn_train| grep -v grep|awk '{print $2}'`
     exit
 fi
 
@@ -20,7 +20,7 @@ if [ "$1" = "console" ]; then
         --learning_rate=0.001 \
         --label_file=data/train.txt \
         --charset=charset.6883.txt \
-        --name=crnn \
+        --name=crnn_train \
         --resize_mode=PAD \
         --validate_steps=2 \
         --validate_num=2 \
@@ -44,7 +44,7 @@ else
         --learning_rate=0.001 \
         --label_file=data/train.txt \
         --charset=charset.3770.txt \
-        --name=crnn \
+        --name=crnn_train \
         --resize_mode=PAD \
         --validate_steps=1000 \
         --validate_file=data/test.txt \

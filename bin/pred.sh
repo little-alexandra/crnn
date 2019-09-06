@@ -12,7 +12,7 @@ DIR="data/test"
 LABEL="data/test.txt"
 CHARSET="charset.6883.txt"
 MODEL="LATEST" #自动加载最新的
-#MODEL="crnn_2019-06-12-11-07-43.ckpt-100000"    #指定模型，也可以从外面指定
+MODEL="crnn_2019-06-26-11-48-29.ckpt-62000"
 BEAM=1
 
 ARGS=`getopt -o i:d:l:b --long image:,dir:,label:,beam:,charset:,model: -- "$@"`

@@ -12,10 +12,9 @@ from typing import List
 import numpy as np
 import tensorflow as tf
 from config import config
-from local_utils import log_utils
 from local_utils.log_utils import  _p_shape,_p
-import re,cv2,logging
-from Levenshtein import *
+import re,cv2
+from Levenshtein import distance
 from local_utils.preprocess_utils import image_resize_with_pad
 import os
 import logging

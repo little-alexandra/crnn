@@ -162,6 +162,9 @@ if __name__ == '__main__':
 
     producers = []
     queue = Queue()
+
+
+
     for i in range(worker):
         p = Process(target=create_image, args=(queue,label_dir,i,task_num,charset,all_bg_images))
         producers.append(p)

@@ -35,7 +35,7 @@ def initialize(config,beam_width=config.BEAM_WIDTH):
         # config tf session
         saver = tf.train.Saver()
         logger.debug("创建crnn saver")
-        sess = tf.Session(graph=g,config=config)
+        sess = tf.Session(graph=g)
 
         if FLAGS.crnn_model_file:
             print(FLAGS.crnn_model_file)
@@ -50,6 +50,7 @@ def initialize(config,beam_width=config.BEAM_WIDTH):
             ckpt = tf.train.latest_checkpoint(FLAGS.crnn_model_dir)
             logger.debug("最新CRNN模型目录中最新模型文件:%s", ckpt)  # 有点担心learning rate也被恢复
             saver.restore(sess, ckpt)
+
 
     return sess,g
 
@@ -94,9 +95,9 @@ def recognize():
             image = cv2.imread(image_path, cv2.IMREAD_COLOR)
             image_list.append(image)
 
-    sess = initialize(FLAGS.beam_width)
+    sess,g = initialize(FLAGS.beam_width)
 
-    preds,probs = pred(image_list,16,sess)
+    preds,probs = pred(image_list,16,sess,g)
 
     if (FLAGS.file):
         logger.info('解析图片%s为：%r,概率：%r', image_path, preds[0],probs[0])
