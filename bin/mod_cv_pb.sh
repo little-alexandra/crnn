@@ -5,8 +5,8 @@ echo "模型转换 ckpt to pb"
 ckpt_mod_path=$1
 save_mod_dir=$2
 
-if [ "ckpt_mod_path" = "" ]; then
-    echo "ckpt模型目录不能为空 参数1"
+if [ "$ckpt_mod_path" = "" ]; then
+    echo "ckpt模型目录不能为空 参数$1"
     exit
 fi
 
