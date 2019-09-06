@@ -3,20 +3,21 @@
 """
 Train Script
 """
-import os
-import tensorflow as tf
-import time
 import datetime
+import os
+import time
+
+import tensorflow as tf
+
+from config import config
 from crnn_model import crnn_model
 from local_utils import data_utils, log_utils, image_util
-from config import config
-from utils import tensor_util
 from tools.early_stop import EarlyStop
+from utils import tensor_util
 from utils.data_factory import DataFactory
-from tensorflow.python.framework import sparse_tensor
 
 tf.app.flags.DEFINE_string('name', 'CRNN', 'no use ,just a flag for shell batch')
-tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
+tf.app.flags.DEFINE_boolean('debug', True, 'debug mode')
 tf.app.flags.DEFINE_string('data_dir', 'data/train', '')
 tf.app.flags.DEFINE_integer('train_batch', 64, '')
 tf.app.flags.DEFINE_integer('train_steps', 1000000, '')
@@ -208,16 +209,16 @@ def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_imag
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
 
         _shape, _indices, _values = sess.run([shape, indices, values],
-                                        feed_dict={input_image: data_images, sequence_size: data_seq})
-        logger.info("-------------- _shape:%s",_shape)
-        logger.info("-------------- _values:%s",_values)
-        logger.info("-------------- _indices:%s",_indices)
+                                             feed_dict={input_image: data_images, sequence_size: data_seq})
+        logger.info("-------------- _shape:%s", _shape)
+        logger.info("-------------- _values:%s", _values)
+        logger.info("-------------- _indices:%s", _indices)
         preds_sparse = tf.SparseTensor(_indices, _values, _shape)
-        #SparseTensor(indices=Tensor("CTCBeamSearchDecoder:0", shape=(?, 2), dtype=int64), values=Tensor("CTCBeamSearchDecoder:1", shape=(?,), dtype=int64), dense_shape=Tensor("CTCBeamSearchDecoder:2", shape=(2,), dtype=int64))
-        #SparseTensor(indices=Tensor("SparseTensor_2/indices:0", shape=(3, 2), dtype=int64), values=Tensor("SparseTensor_2/values:0", shape=(3,), dtype=int64), dense_shae=Tensor("SparseTensor_2/dense_shape:0", shape=(2,), dtype=int64))
-        logger.info("-------------- preds_sparse:%s",preds_sparse)
+        # SparseTensor(indices=Tensor("CTCBeamSearchDecoder:0", shape=(?, 2), dtype=int64), values=Tensor("CTCBeamSearchDecoder:1", shape=(?,), dtype=int64), dense_shape=Tensor("CTCBeamSearchDecoder:2", shape=(2,), dtype=int64))
+        # SparseTensor(indices=Tensor("SparseTensor_2/indices:0", shape=(3, 2), dtype=int64), values=Tensor("SparseTensor_2/values:0", shape=(3,), dtype=int64), dense_shae=Tensor("SparseTensor_2/dense_shape:0", shape=(2,), dtype=int64))
+        logger.info("-------------- preds_sparse:%s", preds_sparse)
 
-        #preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
+        # preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
         logger.debug("Validate Inference完毕，识别了%d张图片", len(data_images))
         _preds = data_utils.sparse_tensor_to_str_new(preds_sparse, charset)
         _labels = data_utils.id2str(input_labels, charset)
