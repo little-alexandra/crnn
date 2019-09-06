@@ -12,7 +12,9 @@ import logging
 from logging import handlers
 import os
 import os.path as ops
-`
+import tensorflow as tf
+import datetime
+FLAGS = tf.app.flags.FLAGS
 
 def _p(tensor,msg):
     if (FLAGS.debug):
