@@ -8,30 +8,34 @@
 """
 Implement some utils used to convert image and it's corresponding label into tfrecords
 """
+import cv2
+import logging
+import os
+import re
 from typing import List
+
 import numpy as np
 import tensorflow as tf
+
 from config import config
 from local_utils.log_utils import  _p_shape,_p
 import re,cv2
 from Levenshtein import distance
 from local_utils.preprocess_utils import image_resize_with_pad
-import os
-import logging
 
 logger = logging.getLogger("Data_Util")
-
 
 FLAGS = tf.app.flags.FLAGS
 
 
-def caculate_edit_distance(preds , labels):
-    distances = [distance(p,l) for p,l in zip(preds,labels)]
-    return sum(distances)/len(distances)
+def caculate_edit_distance(preds, labels):
+    distances = [distance(p, l) for p, l in zip(preds, labels)]
+    return sum(distances) / len(distances)
+
 
 # 字符串
-def caculate_accuracy(preds,labels):
-    result = [p==l for p,l in zip(preds,labels)]
+def caculate_accuracy(preds, labels):
+    result = [p == l for p, l in zip(preds, labels)]
     return np.array(result).mean()
 
 
@@ -55,13 +59,15 @@ def caculate_accuracy(preds,labels):
     [4, 5, 6, 7, 0, 0, 0, 0, 0]
     [1, 2, 3, 4, 5, 6, 7, 8, 9]] 
 '''
-def sparse_tensor_to_str( sparse_tensor: tf.SparseTensor,characters) -> List[str]:
+
+
+def sparse_tensor_to_str(sparse_tensor: tf.SparseTensor, characters) -> List[str]:
     """
     :param sparse_tensor: prediction or ground truth label
     :return: String value of the sparse tensor
     """
     indices = sparse_tensor.indices
-    values = sparse_tensor.values #<------------------------ 这个里面存的是string的id，所以要查找字符表，找到对应字符
+    values = sparse_tensor.values  # <------------------------ 这个里面存的是string的id，所以要查找字符表，找到对应字符
     values = np.array([characters[id] for id in values])
     dense_shape = sparse_tensor.dense_shape
 
@@ -70,7 +76,7 @@ def sparse_tensor_to_str( sparse_tensor: tf.SparseTensor,characters) -> List[str
     number_lists = np.array([['\n'] * dense_shape[1]] * dense_shape[0], dtype=values.dtype)
     res = []
 
-    #先把values，也就是有的值，拷贝到dense向量number_lists中
+    # 先把values，也就是有的值，拷贝到dense向量number_lists中
     for i, index in enumerate(indices):
         number_lists[index[0], index[1]] = values[i]
 
@@ -80,13 +86,14 @@ def sparse_tensor_to_str( sparse_tensor: tf.SparseTensor,characters) -> List[str
 
     return res
 
-def id2str(results,characters):
 
+def id2str(results, characters):
     values = []
     for r in results:
         str = [characters[id] for id in r]
         values.append(''.join(c for c in str if c != '\n'))
     return values
+
 
 # 加载字符集，charset.txt，最后一个是空格
 # 为了兼容charset.txt和charset6k.txt，增加鲁棒性，改一下
@@ -96,7 +103,7 @@ def get_charset(charset_file):
     charset = [ch.strip("\n") for ch in charset]
     charset = "".join(charset)
     charset = list(charset)
-    if charset[-1]!=" ":
+    if charset[-1] != " ":
         charset.append(" ")
     return charset
 
@@ -104,12 +111,12 @@ def get_charset(charset_file):
 def get_file_list(dir):
     from os import listdir
     from os.path import isfile, join
-    file_names = ["data/train_set/"+f for f in listdir(dir) if isfile(join(dir, f))]
+    file_names = ["data/train_set/" + f for f in listdir(dir) if isfile(join(dir, f))]
     # "data/train_set"
     return file_names
 
 
-def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None,limit=None):
+def read_labeled_image_list(label_file_name, dict, unknow_charactor_replacer=None, limit=None):
     f = open(label_file_name, 'r')
 
     filenames = []
@@ -121,22 +128,23 @@ def read_labeled_image_list(label_file_name,dict,unknow_charactor_replacer=None,
     for line in f:
         # logger.debug("line=%s",line)
         # filename, label = line[:-1].split(' ')
-        filename , _ , label = line[:-1].partition(' ') # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
+        filename, _, label = line[:-1].partition(' ')  # partition函数只读取第一次出现的标志，分为左右两个部分,[:-1]去掉回车
         filenames.append(filename)
         labels.append(label)
 
-    logger.info("样本标签数量[%d],样本图像数量[%d]",len(labels),len(filenames))
+    logger.info("样本标签数量[%d],样本图像数量[%d]", len(labels), len(filenames))
 
     if limit:
         image_labels = list(zip(filenames, labels))
         np.random.shuffle(image_labels)
-        logger.info("实际返回%d个样本",limit)
+        logger.info("实际返回%d个样本", limit)
         return zip(*image_labels[0:limit])
 
     return filenames, labels
 
+
 # 这个是在定义操作，注意不是直接的运行，会在session.run后执行
-def read_images_from_disk(input_queue,characters):
+def read_images_from_disk(input_queue, characters):
     # input_queue[0] = _p(input_queue[0],"从磁盘上读取图片和标注")
     image_content = tf.read_file(input_queue[0])
 
@@ -155,14 +163,12 @@ def read_images_from_disk(input_queue,characters):
     return example, labels
 
 
-
 # labels是所有的标签的数组['我爱北京','我爱天安门',...,'他说的法定']
 # characters:词表
-def convert_to_id(labels,characters):
-
+def convert_to_id(labels, characters):
     _lables = []
     for one in labels:
-        _lables.append( [characters.index(l) for l in one] )
+        _lables.append([characters.index(l) for l in one])
 
     return _lables
 
@@ -176,17 +182,17 @@ def convert_to_id(labels,characters):
 #   ..
 # ]
 def to_sparse_tensor(sequences, dtype=np.int32):
-    indices = [] # 位置,哪些位置上非0
-    values = [] # 具体的值
+    indices = []  # 位置,哪些位置上非0
+    values = []  # 具体的值
 
-    for n, seq in enumerate(sequences): # sequences是一个二维list
-        indices.extend(zip([n]*len(seq), range(len(seq)))) # 生成所有值的坐标，不管是不是0，都存下来
+    for n, seq in enumerate(sequences):  # sequences是一个二维list
+        indices.extend(zip([n] * len(seq), range(len(seq))))  # 生成所有值的坐标，不管是不是0，都存下来
         values.extend(seq)
 
     indices = np.asarray(indices, dtype=np.int32)
     values = np.asarray(values, dtype=dtype)
-    shape = np.asarray([len(sequences),np.asarray(indices).max(0)[1]+1],
-                       dtype=np.int32) # shape的行就是seqs的个数，列就是最长的那个seq的长度
+    shape = np.asarray([len(sequences), np.asarray(indices).max(0)[1] + 1],
+                       dtype=np.int32)  # shape的行就是seqs的个数，列就是最长的那个seq的长度
     # logger.debug("labels被转化的sparse的tensor的shape:%r", shape)
     return tf.SparseTensor(indices, values, shape)
 
@@ -194,11 +200,11 @@ def to_sparse_tensor(sequences, dtype=np.int32):
 def expand_array(data):
     max = 0
     for one in data:
-        if len(one)>max:
+        if len(one) > max:
             max = len(one)
 
     for one in data:
-        one.extend( [0] * (max - len(one)) )
+        one.extend([0] * (max - len(one)))
 
     return data
 
@@ -210,11 +216,10 @@ def _to_sparse_tensor(dense):
     values = tf.gather_nd(dense, indices)
     sparse = tf.SparseTensor(indices, values, dense.shape)
     return sparse
-    #labels_tensor = to_sparse_tensor(labels)  # 把label从id数组，变成张量
+    # labels_tensor = to_sparse_tensor(labels)  # 把label从id数组，变成张量
 
 
-def prepare_image_labels(label_file,characters,batch_size):
-
+def prepare_image_labels(label_file, characters, batch_size):
     # 修改了他的加载，讨厌TFRecord方式，直接用文件方式加载
     # 参考：https://saicoco.github.io/tf3/
     # 参考：https://stackoverflow.com/questions/34340489/tensorflow-read-images-with-labels
@@ -285,18 +290,18 @@ def prepare_image_labels(label_file,characters,batch_size):
 
     inputdata = _p_shape(inputdata, "灌入网络之前的数据")
 
-    return inputdata,labels_tensor
+    return inputdata, labels_tensor
 
 
 # 给图片加白色padding
 def padding(image):
-    H,W = config.INPUT_SIZE
-    h,w,c = image.shape
+    H, W = config.INPUT_SIZE
+    h, w, c = image.shape
     # logger.debug("原图大小:%d,%d" ,h,w)
 
-    x_scale = W/w
-    y_scale = H/h
-    if x_scale<y_scale:
+    x_scale = W / w
+    y_scale = H / h
+    if x_scale < y_scale:
         y_scale = x_scale
     else:
         x_scale = y_scale
@@ -304,25 +309,25 @@ def padding(image):
     # logger.debug("缩放x，y方向比例:%f,%f" % (x_scale,y_scale))
 
     # https://www.jianshu.com/p/11879a49d1a0 关于resize
-    image =  cv2.resize(image, None, fx=x_scale, fy=y_scale, interpolation=cv2.INTER_AREA)
+    image = cv2.resize(image, None, fx=x_scale, fy=y_scale, interpolation=cv2.INTER_AREA)
 
     h, w, c = image.shape
 
     # top,bottom,left,right对应边界的像素数目
-    top = round((H - h) /2)
+    top = round((H - h) / 2)
     bottom = H - top - h
-    left = round((W - w) /2)
+    left = round((W - w) / 2)
     right = W - left - w
 
-    image = cv2.copyMakeBorder(image, top,bottom,left,right, cv2.BORDER_CONSTANT, value=[255,255,255])
+    image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[255, 255, 255])
 
     # logger.debug("padding后的图像:%r",image.shape)
     return image
 
 
-
 rex = re.compile(' ')
 logger = logging.getLogger("TextUitil")
+
 
 # 加载字符集，charset.txt，最后一个是空格
 def get_charset(charset_file):
@@ -334,8 +339,8 @@ def get_charset(charset_file):
 
 
 def stat(data):
-    if len(data)==0: return "data size is 0"
-    if type(data)==list:
+    if len(data) == 0: return "data size is 0"
+    if type(data) == list:
         data = np.array(data)
 
     return "num={},mean={},std={},max={},min={},25%/50%/75%={},0={}".format(
@@ -345,18 +350,20 @@ def stat(data):
         data.max(),
         data.min(),
         np.percentile(data, [25, 50, 75]),
-        (data==0).sum())
+        (data == 0).sum())
 
-def process_unknown_charactors_all(all_sentence, dict,replace_char=None):
+
+def process_unknown_charactors_all(all_sentence, dict, replace_char=None):
     result = []
     for sentence in all_sentence:
-        result.append(process_unknown_charactors(sentence, dict,replace_char))
+        result.append(process_unknown_charactors(sentence, dict, replace_char))
     return result
+
 
 # 1.处理一些“宽”字符,替换成词表里的
 # 2.易混淆的词，变成统一的
 # 3.对不认识的词表中的词，是否替换成某个字符，如果不与替换，就直接返回空
-def process_unknown_charactors(sentence, dict,replace_char=None):
+def process_unknown_charactors(sentence, dict, replace_char=None):
     unkowns = "０１２３４５６７８９ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ！＠＃＄％＾＆＊（）－＿＋＝｛｝［］｜＼＜＞，．。；：､？／×·■"
     knows = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()-_+={}[]|\<>,.。;:、?/x.."
     confuse_letters = "OolIZS"
@@ -370,7 +377,7 @@ def process_unknown_charactors(sentence, dict,replace_char=None):
     for one in sentence:
         # 对一些特殊字符进行替换，替换成词表的词
         i = unkowns.find(one)
-        if i==-1:
+        if i == -1:
             letter = one
         else:
             letter = knows[i]
@@ -380,17 +387,17 @@ def process_unknown_charactors(sentence, dict,replace_char=None):
         # 但是，转念又一想，这样也不好，容易失去后期用形近字纠错的机会，嗯，算了，还是返回空，抛弃这样的样本把
         if letter not in dict:
             if replace_char:
-                letter = replace_char#'■'
+                letter = replace_char  # '■'
             else:
-                logger.error("句子[%s]的字[%s]不属于词表,剔除此样本",sentence,letter)
+                logger.error("句子[%s]的字[%s]不属于词表,剔除此样本", sentence, letter)
                 return None
 
         # 把容易混淆的字符和数字，替换一下
         j = confuse_letters.find(letter)
-        if j!=-1:
+        if j != -1:
             letter = replace_letters[j]
 
-        result+= letter
+        result += letter
     return result
 
 
@@ -399,47 +406,48 @@ def convert_label_to_id(label, charsets):
     label_index = []
     for l in label:
         if not l in charsets:
-            logger.error("字符串[%s]中的字符[%s]未在词表中",label,l)
+            logger.error("字符串[%s]中的字符[%s]未在词表中", label, l)
             return None
         label_index.append(charsets.index(l))
     return label_index
 
 
 def get_latest_model(dir):
-    latest_model_index = None # index文件名字
+    latest_model_index = None  # index文件名字
     latest_model_name = None  # model名字，不包含后缀名，这个是model加载需要的
     latest_time = -9999999
     for file_name in os.listdir(dir):
         prefix, subfix = os.path.splitext(file_name)
         if subfix.lower() not in ['.index']: continue
-        file_full_path = os.path.join(dir,file_name)
+        file_full_path = os.path.join(dir, file_name)
         mtime = os.stat(file_full_path).st_mtime
         # print(mtime)
-        if mtime>latest_time:
+        if mtime > latest_time:
             latest_model_index = file_name
-            latest_model_name  = prefix
+            latest_model_name = prefix
             latest_time = mtime
             # file_modify_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))
     if not latest_model_index:
-        raise ValueError("无法从目录[%s]中找到最新的模型文件",dir)
+        raise ValueError("无法从目录[%s]中找到最新的模型文件", dir)
 
-    logger.debug("在目录%s中找到最新的模型文件：%s",dir,latest_model_name)
-    return os.path.join(dir,latest_model_name)
+    logger.debug("在目录%s中找到最新的模型文件：%s", dir, latest_model_name)
+    return os.path.join(dir, latest_model_name)
 
 
 # 按照List中最大长度扩展label
 def extend_to_max_len(labels, ext_val: int = -1):
     max_len = 0
     for one in labels:
-        if len(one)>max_len:
+        if len(one) > max_len:
             max_len = len(one)
 
     for one in labels:
-        one.extend( [ext_val] * (max_len - len(one)) )
+        one.extend([ext_val] * (max_len - len(one)))
 
     return labels
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     tf.app.flags.DEFINE_string('charset', 'charset6k.txt', '')
     chrset = get_charset()
     print(chrset)
