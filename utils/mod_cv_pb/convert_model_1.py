@@ -27,6 +27,9 @@ def convert():
         if not tf.gfile.Exists(cur):
             saveModDir = cur
             break
+
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3, allow_growth=True)
+    ses_config = tf.ConfigProto(gpu_options=gpu_options)
     print("模型保存目录", saveModDir)
     # 原ckpt模型
     ckptModPath = FLAGS.ckpt_mod_path
@@ -45,11 +48,11 @@ def convert():
                                    layers_nums=config.HIDDEN_LAYERS,  # 2层
                                    num_classes=len(charset) + 1)
     with tf.variable_scope('shadow', reuse=False):
-        net_out = network.build(inputdata=input_image, sequence_len=sequence_size)
+        net_out,net_out_index = network.build(inputdata=input_image, sequence_len=sequence_size)
     # 创建校验用的decode和编辑距离
-    validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
+    #validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
     saver = tf.train.Saver()
-    session = tf.Session()
+    session = tf.Session(config=ses_config)
     saver.restore(sess=session, save_path=ckptModPath)
 
     # 保存转换训练好的模型
@@ -59,9 +62,10 @@ def convert():
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
     output = {
-        "output_indices": tf.saved_model.utils.build_tensor_info(indices),
-        "output_values": tf.saved_model.utils.build_tensor_info(values),
-        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+        "output_net_out_index": tf.saved_model.utils.build_tensor_info(net_out_index)
+        # "output_indices": tf.saved_model.utils.build_tensor_info(indices),
+        # "output_values": tf.saved_model.utils.build_tensor_info(values),
+        # "output_shape": tf.saved_model.utils.build_tensor_info(shape),
     }
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
