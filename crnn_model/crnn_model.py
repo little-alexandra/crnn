@@ -266,7 +266,7 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
             logger.debug("LSTM输出的Shape:%r", self.shape(rnn_out))
         return rnn_out, raw_pred  # 返回的是一个张量（rnn length,batch,class)，和每个rnn步骤 预测的最可能的字符
 
-    def build(self, inputdata: tf.Tensor, sequence_len) -> tf.Tensor:
+    def build(self, inputdata: tf.Tensor, sequence_len) -> (tf.Tensor, tf.Tensor):
         """ Main routine to construct the network
 
         :param inputdata:
@@ -287,7 +287,11 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         # raw_pred = _p_shape(raw_pred, "LTSM的输出raw_pred")
         # logger.debug("网络构建完毕")
 
-        return net_out
+        net_out = _p_shape(net_out, "-------- net_out")
+        net_out_index = tf.argmax(net_out, axis=2)
+        net_out_index = _p_shape(net_out_index, "-------- net_out_index")
+        logger.info("------------net_out_index:%s", tf.shape(net_out_index))
+        return net_out, net_out_index
 
     def loss(self, net_out, labels, sequence_length):
         # net_out是啥，[W, N * H, Cls]
@@ -356,6 +360,6 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         indices = decoded[0].indices
         values = decoded[0].values
         shape = decoded[0].dense_shape
-
+        # tf.sparse_tensor_to_dense(decoded[0])
         values = _p_shape(values, "CTC return value")
         return decoded[0], indices, values, shape

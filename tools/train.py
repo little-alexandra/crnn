@@ -112,7 +112,7 @@ def train():
                                    num_classes=len(charset) + 1)
 
     with tf.variable_scope('shadow', reuse=False):
-        net_out = network.build(inputdata=input_image, sequence_len=sequence_size)
+        net_out, _ = network.build(inputdata=input_image, sequence_len=sequence_size)
 
     # 创建优化器和损失函数的op
     cost, optimizer = network.loss(net_out, sparse_label, sequence_size)
