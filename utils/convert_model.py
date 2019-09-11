@@ -21,6 +21,7 @@ FLAGS = tf.app.flags.FLAGS
 def convert():
     # 保存转换好的模型目录
     saveModDir = FLAGS.save_mod_dir
+
     # 每次转换都生成一个版本目录
     for i in range(100000, 9999999):
         cur = os.path.join(saveModDir, str(i))
@@ -59,6 +60,7 @@ def convert():
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
     output = {
+        # tf.saved_model.utils.build_tensor_info(sparse_tensor),
         "output_shape": tf.saved_model.utils.build_tensor_info(shape),
         "output_indices": tf.saved_model.utils.build_tensor_info(indices),
         "output_values": tf.saved_model.utils.build_tensor_info(values),
