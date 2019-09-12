@@ -50,7 +50,7 @@ def convert():
     with tf.variable_scope('shadow', reuse=False):
         net_out,net_out_index = network.build(inputdata=input_image, sequence_len=sequence_size)
     # 创建校验用的decode和编辑距离
-    #validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
+    validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
     saver = tf.train.Saver()
     session = tf.Session(config=ses_config)
     saver.restore(sess=session, save_path=ckptModPath)
@@ -62,10 +62,10 @@ def convert():
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
     output = {
-        "output_net_out_index": tf.saved_model.utils.build_tensor_info(net_out_index)
-        # "output_indices": tf.saved_model.utils.build_tensor_info(indices),
-        # "output_values": tf.saved_model.utils.build_tensor_info(values),
-        # "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+        "output_net_out_index": tf.saved_model.utils.build_tensor_info(net_out_index),
+        "output_indices": tf.saved_model.utils.build_tensor_info(indices),
+        "output_values": tf.saved_model.utils.build_tensor_info(values),
+        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
     }
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
