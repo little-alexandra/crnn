@@ -287,11 +287,15 @@ class ShadowNet(cnn_basenet.CNNBaseModel):
         # raw_pred = _p_shape(raw_pred, "LTSM的输出raw_pred")
         # logger.debug("网络构建完毕")
 
-        net_out = _p_shape(net_out, "-------- net_out")
-        net_out_index = tf.argmax(net_out, axis=2)
-        net_out_index = _p_shape(net_out_index, "-------- net_out_index")
-        logger.info("------------net_out_index:%s", tf.shape(net_out_index))
-        return net_out, net_out_index
+        # 2019.9.10 红岩重构的，模拟计算ctc的代码，用于解决tf-serving的docker中，ctc慢的问题，
+        # net_out = _p_shape(net_out, "-------- net_out")
+        # net_out_index = tf.argmax(net_out, axis=2)
+        # net_out_index = _p_shape(net_out_index, "-------- net_out_index")
+        # logger.info("------------net_out_index:%s", tf.shape(net_out_index))
+        # return net_out, net_out_index
+
+        return net_out,raw_pred
+
 
     def loss(self, net_out, labels, sequence_length):
         # net_out是啥，[W, N * H, Cls]

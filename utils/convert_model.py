@@ -28,6 +28,9 @@ def convert():
         if not tf.gfile.Exists(cur):
             saveModDir = cur
             break
+
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.3, allow_growth=True)
+    ses_config = tf.ConfigProto(gpu_options=gpu_options)
     print("模型保存目录", saveModDir)
     # 原ckpt模型
     ckptModPath = FLAGS.ckpt_mod_path
@@ -46,7 +49,7 @@ def convert():
                                    layers_nums=config.HIDDEN_LAYERS,  # 2层
                                    num_classes=len(charset))
     with tf.variable_scope('shadow', reuse=False):
-        net_out,net_out_index = network.build(inputdata=input_image, sequence_len=sequence_size)
+        net_out,_ = network.build(inputdata=input_image, sequence_len=sequence_size)
     # 创建校验用的decode和编辑距离
     decoded = network.validate(net_out, sequence_size)
 

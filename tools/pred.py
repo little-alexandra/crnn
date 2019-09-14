@@ -128,7 +128,7 @@ def build_graph(g, charset, beam_width=config.BEAM_WIDTH):
         batch_size = tf.placeholder(tf.int32, shape=[None])
 
         with tf.variable_scope('shadow'):
-            net_out = net.build(inputdata=inputdata, sequence_len=batch_size)
+            net_out,_ = net.build(inputdata=inputdata, sequence_len=batch_size)
 
         net_out = log_utils._p_shape(net_out, "LSTM运行态的输出")
         logger.debug("CTC输入网络的维度为：%r", net_out.get_shape().as_list())
