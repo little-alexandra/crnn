@@ -8,4 +8,4 @@ if [ "$2" = "" ]; then
     exit
 fi
 
-python -m utils.import_pb_to_tensorboard.py --model_dir $1 --log_dir $2
+PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python python -m utils.import_pb_to_tensorboard --model_dir $1 --log_dir $2

@@ -44,14 +44,19 @@ def convert():
     network = crnn_model.ShadowNet(phase='Train',
                                    hidden_nums=config.HIDDEN_UNITS,  # 256
                                    layers_nums=config.HIDDEN_LAYERS,  # 2层
-                                   num_classes=len(charset) + 1)
+                                   num_classes=len(charset))
     with tf.variable_scope('shadow', reuse=False):
-        net_out = network.build(inputdata=input_image, sequence_len=sequence_size)
+        net_out,net_out_index = network.build(inputdata=input_image, sequence_len=sequence_size)
     # 创建校验用的decode和编辑距离
-    validate_decode, shape, indices, values = network.validate(net_out, sequence_size)
+    decoded = network.validate(net_out, sequence_size)
+
+    indices = decoded.indices
+    values = decoded.values
+    shape = decoded.dense_shape
+
     saver = tf.train.Saver()
     session = tf.Session()
-    saver.restore(sess=session, save_path=ckptModPath)
+    saver.restore   (sess=session, save_path=ckptModPath)
 
     # 保存转换训练好的模型
     builder = tf.saved_model.builder.SavedModelBuilder(saveModDir)
@@ -60,10 +65,9 @@ def convert():
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
     output = {
-        # tf.saved_model.utils.build_tensor_info(sparse_tensor),
-        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
         "output_indices": tf.saved_model.utils.build_tensor_info(indices),
         "output_values": tf.saved_model.utils.build_tensor_info(values),
+        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
     }
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
@@ -71,9 +75,9 @@ def convert():
         method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
     )
     builder.add_meta_graph_and_variables(
-        session,
-        [tf.saved_model.tag_constants.SERVING],
-        {
+        sess=session,
+        tags=[tf.saved_model.tag_constants.SERVING],
+        signature_def_map={
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: prediction_signature
         }
     )

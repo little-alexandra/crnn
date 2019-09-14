@@ -118,7 +118,7 @@ def build_graph(g, charset, beam_width=config.BEAM_WIDTH):
         net = crnn_model.ShadowNet(phase='Test',
                                    hidden_nums=config.HIDDEN_UNITS,
                                    layers_nums=config.HIDDEN_LAYERS,
-                                   num_classes=len(charset) + 1)  # 这里+1是为了ctc_loss需要，预测多一个类，叫空格
+                                   num_classes=len(charset))  # 这里+1是为了ctc_loss需要，预测多一个类，叫空格
         h, w = config.INPUT_SIZE  # 32,256 H,W
         inputdata = tf.placeholder(dtype=tf.float32,
                                    shape=[None, h, w, 3],

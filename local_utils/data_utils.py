@@ -130,6 +130,8 @@ def get_charset(charset_file):
     charset = [ch.strip("\n") for ch in charset]
     charset = "".join(charset)
     charset = list(charset)
+    print(len(charset))
+    print("=============================")
     if charset[-1] != " ":
         charset.append(" ")
     return charset
@@ -356,13 +358,6 @@ rex = re.compile(' ')
 logger = logging.getLogger("TextUitil")
 
 
-# 加载字符集，charset.txt，最后一个是空格
-def get_charset(charset_file):
-    charset = open(charset_file, 'r', encoding='utf-8').readlines()
-    charset = [ch.strip("\n") for ch in charset]
-    charset = "".join(charset)
-    charset = list(charset)
-    return charset
 
 
 def stat(data):

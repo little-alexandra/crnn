@@ -3,20 +3,21 @@
 """
 Train Script
 """
-import os
-import tensorflow as tf
-import time
 import datetime
+import os
+import time
+
+import tensorflow as tf
+
+from config import config
 from crnn_model import crnn_model
 from local_utils import data_utils, log_utils, image_util
-from config import config
-from utils import tensor_util
 from tools.early_stop import EarlyStop
+from utils import tensor_util
 from utils.data_factory import DataFactory
-from tensorflow.python.framework import sparse_tensor
 
 tf.app.flags.DEFINE_string('name', 'CRNN', 'no use ,just a flag for shell batch')
-tf.app.flags.DEFINE_boolean('debug', False, 'debug mode')
+tf.app.flags.DEFINE_boolean('debug', True, 'debug mode')
 tf.app.flags.DEFINE_string('data_dir', 'data/train', '')
 tf.app.flags.DEFINE_integer('train_batch', 64, '')
 tf.app.flags.DEFINE_integer('train_steps', 1000000, '')
@@ -108,16 +109,16 @@ def train():
     network = crnn_model.ShadowNet(phase='Train',
                                    hidden_nums=config.HIDDEN_UNITS,  # 256
                                    layers_nums=config.HIDDEN_LAYERS,  # 2层
-                                   num_classes=len(charset) + 1)
+                                   num_classes=len(charset))
 
     with tf.variable_scope('shadow', reuse=False):
-        net_out = network.build(inputdata=input_image, sequence_len=sequence_size)
+        net_out, _ = network.build(inputdata=input_image, sequence_len=sequence_size)
 
     # 创建优化器和损失函数的op
     cost, optimizer = network.loss(net_out, sparse_label, sequence_size)
 
     # 创建校验用的decode和编辑距离
-    validate_decode, shape, indices, values = network.validate(net_out, sequence_size)
+    validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
 
     # 创建一个变量用于把计算的精确度加载到summary中
     accuracy, edit_distance, train_summary_op, validate_summary_op = summary_scalars(cost)
@@ -170,7 +171,7 @@ def train():
                                          sequence_size,
                                          sess,
                                          validate_data_generator,
-                                         validate_decode, shape, indices, values,
+                                         validate_decode, indices, values, shape,
                                          validate_summary_op)
                     if is_need_early_stop(early_stop, _accuracy, saver, sess, epoch): break  # 用负的编辑距离
 
@@ -194,7 +195,7 @@ def train():
 
 
 def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_image, sequence_size, sess,
-             validate_data_generator, validate_decode, shape, indices, values, validate_summary_op):
+             validate_data_generator, validate_decode, indices, values, shape, validate_summary_op):
     logger.info('Epoch为检验(validate)，开始，校验%d个样本', FLAGS.validate_num * FLAGS.validate_batch)
     labels = []
     preds = []
@@ -207,17 +208,17 @@ def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_imag
         data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
 
-        _shape, _indices, _values = sess.run([shape, indices, values],
-                                        feed_dict={input_image: data_images, sequence_size: data_seq})
-        logger.info("-------------- _shape:%s",_shape)
-        logger.info("-------------- _values:%s",_values)
-        logger.info("-------------- _indices:%s",_indices)
+        _indices, _values, _shape = sess.run([indices, values, shape],
+                                             feed_dict={input_image: data_images, sequence_size: data_seq})
+        logger.info("-------------- _indices:%s", _indices)
+        logger.info("-------------- _values:%s", _values)
+        logger.info("-------------- _shape:%s", _shape)
         preds_sparse = tf.SparseTensor(_indices, _values, _shape)
-        #SparseTensor(indices=Tensor("CTCBeamSearchDecoder:0", shape=(?, 2), dtype=int64), values=Tensor("CTCBeamSearchDecoder:1", shape=(?,), dtype=int64), dense_shape=Tensor("CTCBeamSearchDecoder:2", shape=(2,), dtype=int64))
-        #SparseTensor(indices=Tensor("SparseTensor_2/indices:0", shape=(3, 2), dtype=int64), values=Tensor("SparseTensor_2/values:0", shape=(3,), dtype=int64), dense_shae=Tensor("SparseTensor_2/dense_shape:0", shape=(2,), dtype=int64))
-        logger.info("-------------- preds_sparse:%s",preds_sparse)
+        # SparseTensor(indices=Tensor("CTCBeamSearchDecoder:0", shape=(?, 2), dtype=int64), values=Tensor("CTCBeamSearchDecoder:1", shape=(?,), dtype=int64), dense_shape=Tensor("CTCBeamSearchDecoder:2", shape=(2,), dtype=int64))
+        # SparseTensor(indices=Tensor("SparseTensor_2/indices:0", shape=(3, 2), dtype=int64), values=Tensor("SparseTensor_2/values:0", shape=(3,), dtype=int64), dense_shae=Tensor("SparseTensor_2/dense_shape:0", shape=(2,), dtype=int64))
+        logger.info("-------------- preds_sparse:%s", preds_sparse)
 
-        #preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
+        # preds_sparse = sess.run(validate_decode, feed_dict={input_image: data_images, sequence_size: data_seq})
         logger.debug("Validate Inference完毕，识别了%d张图片", len(data_images))
         _preds = data_utils.sparse_tensor_to_str_new(preds_sparse, charset)
         _labels = data_utils.id2str(input_labels, charset)
