@@ -1,3 +1,5 @@
+# 这个命令是，为了把pb model的结构输出到summary中，
+# 以便可以通过tensorboard去查看
 if [ "$1" = "" ]; then
     echo "模型目录不能为空: show_pbmodel <模型目录> <tboard log目录>"
     exit

@@ -50,6 +50,11 @@
 - 因为讨厌padding成0（黑色）或者255（白色），所以只选择resize
 - 不过前面的CNN怎么也不能支持宽度吧，必须要resize把，突然意识到，所谓一个批次可以宽度不定，是指的RNN的sequence吧（突然很绝望）
 
+## 9.10 piginzoo
+- hongyan创建了branch convert_tfs来解决tf-serving的模型转换：从checkpoint到protocol buffer（pb）格式
+- 解决ctc在tf-serving's docker中运行慢的问题
+
+
 我Fork了这个版本，主要目的是为加上注释，呵呵。
 
 # CRNN_Tensorflow

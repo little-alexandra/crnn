@@ -11,6 +11,9 @@ logs/
 # C extensions
 *.so
 
+crnn.egg-info/
+build/
+
 data_generator/background/
 data_generator/font/
 data/train
