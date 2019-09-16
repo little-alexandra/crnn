@@ -53,9 +53,6 @@ def convert():
     # 创建校验用的decode和编辑距离
     decoded = network.validate(net_out, sequence_size)
 
-    indices = decoded.indices
-    values = decoded.values
-    shape = decoded.dense_shape
 
     saver = tf.train.Saver()
     session = tf.Session()
@@ -68,19 +65,28 @@ def convert():
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
     output = {
-        "output_indices": tf.saved_model.utils.build_tensor_info(indices),
-        "output_values": tf.saved_model.utils.build_tensor_info(values),
-        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+        "output": tf.saved_model.utils.build_tensor_info(decoded),
     }
+
+    # indices = decoded.indices
+    # values = decoded.values
+    # shape = decoded.dense_shape
+    # output = {
+    #     "output_indices": tf.saved_model.utils.build_tensor_info(indices),
+    #     "output_values": tf.saved_model.utils.build_tensor_info(values),
+    #     "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+    # }
+    
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
         outputs=output,
         method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
     )
+
     builder.add_meta_graph_and_variables(
         sess=session,
-        tags=[tf.saved_model.tag_constants.SERVING],
-        signature_def_map={
+        tags=["CRNN"],
+        signature_def_map={ # 保存模型的方法名，与客户端的request.model_spec.signature_name对应
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: prediction_signature
         }
     )
