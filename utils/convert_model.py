@@ -68,6 +68,7 @@ def convert():
         "output": tf.saved_model.utils.build_tensor_info(decoded),
     }
 
+    # 之前红岩的做法，他遇到的问题是，说无法直接绑定一个sparse_tensor，我测试貌似没事，我猜可能是由于tfserving版本的问题把，他用的是1.9，我用的是1.14
     # indices = decoded.indices
     # values = decoded.values
     # shape = decoded.dense_shape
@@ -76,7 +77,7 @@ def convert():
     #     "output_values": tf.saved_model.utils.build_tensor_info(values),
     #     "output_shape": tf.saved_model.utils.build_tensor_info(shape),
     # }
-    
+
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
         outputs=output,
