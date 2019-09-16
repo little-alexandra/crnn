@@ -8,7 +8,7 @@ save_mod_dir=$2
 if [ "$ckpt_mod_path" = "" ]; then
     echo "ckpt模型目录不能为空: conver_model <原始模型的名称> <目标pb模型的生成目录>"
     echo "例："
-    echo "  convert_model.sh /app.fast/projects/models/crnn_2019-06-27-05-06-48.ckpt-58000 ./model"
+    echo "  bin/convert_model.sh /app.fast/projects/models/crnn_2019-06-27-05-06-48.ckpt-58000  ../ocr/model/crnn"
 fi
 
 if [ "$save_mod_dir" = "" ]; then
