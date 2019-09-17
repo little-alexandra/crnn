@@ -86,7 +86,7 @@ def convert():
 
     builder.add_meta_graph_and_variables(
         sess=session,
-        tags=["CRNN"],
+        tags=[tf.saved_model.SERVING],
         signature_def_map={ # 保存模型的方法名，与客户端的request.model_spec.signature_name对应
             tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: prediction_signature
         }
