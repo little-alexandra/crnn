@@ -63,20 +63,21 @@ def convert():
         "input_data": tf.saved_model.utils.build_tensor_info(input_image),
         "input_batch_size": tf.saved_model.utils.build_tensor_info(sequence_size),
     }
-    # output = {
-    #     "output": tf.saved_model.utils.build_tensor_info(decoded),
-    # }
-
-    # 之前红岩的做法，他遇到的问题是，说无法直接绑定一个sparse_tensor，我测试貌似没事，我猜可能是由于tfserving版本的问题把，
-    # 他用的是1.9，我用的是1.14
-    indices = decoded.indices
-    values = decoded.values
-    shape = decoded.dense_shape
+    # B.直接输出一个整个的SparseTensor
     output = {
-        "output_indices": tf.saved_model.utils.build_tensor_info(indices),
-        "output_values": tf.saved_model.utils.build_tensor_info(values),
-        "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+        "output": tf.saved_model.utils.build_tensor_info(decoded),
     }
+
+    # A.之前红岩的做法，他遇到的问题是，说无法直接绑定一个sparse_tensor，我测试貌似没事，我猜可能是由于tfserving版本的问题把，
+    # 他用的是1.9，我用的是1.14
+    # indices = decoded.indices
+    # values = decoded.values
+    # shape = decoded.dense_shape
+    # output = {
+    #     "output_indices": tf.saved_model.utils.build_tensor_info(indices),
+    #     "output_values": tf.saved_model.utils.build_tensor_info(values),
+    #     "output_shape": tf.saved_model.utils.build_tensor_info(shape),
+    # }
 
     prediction_signature = tf.saved_model.signature_def_utils.build_signature_def(
         inputs=inputs,
