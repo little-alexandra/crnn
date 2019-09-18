@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np,time
 from local_utils import data_utils
 
-charset = data_utils.get_charset("charset.3770")
+charset = data_utils.get_charset("charset.3770.txt")
 
 
 inputdata = tf.placeholder(dtype=tf.float32,
