@@ -4,14 +4,14 @@ import numpy as np,time
 inputdata = tf.placeholder(dtype=tf.float32,
                            shape=[128,128,3862],
                            name='input')
-# decodes, prob = tf.nn.ctc_beam_search_decoder(inputs=inputdata,
-#                                               beam_width = 1,
-#                                               sequence_length= np.array(65 * [128]),
-#                                               merge_repeated=False)
+beam_decodes, beam_prob = tf.nn.ctc_beam_search_decoder(inputs=inputdata,
+                                              beam_width = 1,
+                                              sequence_length= np.array(128 * [128]),
+                                              merge_repeated=True)
 
-decodes, prob = tf.nn.ctc_greedy_decoder(inputs=inputdata,
-                                              sequence_length= np.array(65 * [128]),
-                                              merge_repeated=False)
+greedy_decodes, greedy_prob = tf.nn.ctc_greedy_decoder(inputs=inputdata,
+                                              sequence_length= np.array(128 * [128]),
+                                              merge_repeated=True)
 
 
 # sequence_length: 1-D `int32` vector containing sequence lengths,having size `[batch_size]`.
@@ -21,10 +21,18 @@ sess = tf.Session()
 _input_data = np.random.random((128,128,3862))
 with sess.as_default():
     now = time.time()
-    preds, _prob = sess.run(
-        [decodes, prob],
+    sess.run(
+        [greedy_decodes, greedy_prob],
         feed_dict={
             inputdata: _input_data
         })
 
-    print("耗时：%d" % (time.time() - now))
+    print("Greedy耗时：%d" % (time.time() - now))
+    now = time.time()
+    sess.run(
+        [beam_decodes, beam_prob],
+        feed_dict={
+            inputdata: _input_data
+        })
+
+    print("BeamSearch耗时：%d" % (time.time() - now))
