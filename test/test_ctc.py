@@ -31,7 +31,7 @@ with sess.as_default():
             inputdata: _input_data
         })
     result = data_utils.sparse_tensor_to_str(greedy_d,charset)
-    print("Greedy耗时：%d秒,结果：%s" % (time.time() - now,result))
+    print("Greedy耗时：%d秒,结果：%r" % (time.time() - now,result))
 
     now = time.time()
     beam_d, beam_p = sess.run(
@@ -40,4 +40,4 @@ with sess.as_default():
             inputdata: _input_data
         })
     result = data_utils.sparse_tensor_to_str(beam_d, charset)
-    print("BeamSearch耗时：%d秒,结果：%s" % (time.time() - now, result))
+    print("BeamSearch耗时：%d秒,结果：%r" % (time.time() - now, result))
