@@ -3,8 +3,15 @@ import numpy as np,time
 from local_utils import data_utils
 from ctc import BeamSearch
 
+import sys
+args = sys.argv
+
+seq= 50
+if(len(args)==2):
+    print("Sequence Length:",args[1])
+    seq = int(args[1])
 charset = data_utils.get_charset("charset.3770.txt")
-seq= 128
+
 batch = 128
 
 #[max_time, batch_size, num_classes]
@@ -65,7 +72,8 @@ with sess.as_default():
             inputdata: _input_data
         })
     result = data_utils.sparse_tensor_to_str(greedy_d[0],charset)
-    print("Greedy耗时：%d秒,结果：\n%r" % (time.time() - now,result))
+    print("Greedy耗时：%d秒" % (time.time() - now))
+    # print("Greedy耗时：%d秒,结果：\n%r" % (time.time() - now,result))
     # print(np.log(greedy_p))
 
     # 2.用beam_width=1的beam_search_decoder
@@ -76,7 +84,8 @@ with sess.as_default():
             inputdata: _input_data
         })
     result = data_utils.sparse_tensor_to_str(beam_d[0], charset)
-    print("BeamSearch耗时：%d秒,结果：\n%r" % (time.time() - now, result))
+    print("BeamSearch耗时：%d秒" % (time.time() - now))
+    # print("BeamSearch耗时：%d秒,结果：\n%r" % (time.time() - now, result))
     # print(np.log(np.array(beam_p)))
 
     # 3.自己实现的一个贪心法
@@ -89,7 +98,8 @@ with sess.as_default():
     print("自己实现,输入：", max_i.shape)
     # print("自己实现,概率：", p)
     result = get_string(max_i, charset)
-    print("自己实现，耗时：%d秒,结果：\n%r" % (time.time() - now, result))
+    print("自己实现，耗时：%d秒" % (time.time() - now))
+    # print("自己实现，耗时：%d秒,结果：\n%r" % (time.time() - now, result))
 
     # 4.第三方的一个ctc inference实现
     # now = time.time()
