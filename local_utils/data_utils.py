@@ -88,6 +88,7 @@ def sparse_tensor_to_str_new(sparse_tensor: tf.SparseTensor, characters) -> List
     return res
 
 
+#
 def sparse_tensor_to_str(sparse_tensor: tf.SparseTensor, characters) -> List[str]:
     """
     :param sparse_tensor: prediction or ground truth label
