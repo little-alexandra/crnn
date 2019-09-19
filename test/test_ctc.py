@@ -56,6 +56,8 @@ sess = tf.Session()
 
 _input_data = np.random.random((seq,batch,len(charset)))
 with sess.as_default():
+
+    # 1.tf自带的贪心法
     now = time.time()
     greedy_d,greedy_p = sess.run(
         [greedy_decodes, greedy_prob],
@@ -66,6 +68,7 @@ with sess.as_default():
     print("Greedy耗时：%d秒,结果：\n%r" % (time.time() - now,result))
     # print(np.log(greedy_p))
 
+    # 2.用beam_width=1的beam_search_decoder
     now = time.time()
     beam_d, beam_p = sess.run(
         [beam_decodes, beam_prob],
@@ -76,6 +79,7 @@ with sess.as_default():
     print("BeamSearch耗时：%d秒,结果：\n%r" % (time.time() - now, result))
     # print(np.log(np.array(beam_p)))
 
+    # 3.自己实现的一个贪心法
     now = time.time()
     max_i,p = sess.run(
         [max_index,probs],
@@ -87,18 +91,18 @@ with sess.as_default():
     result = get_string(max_i, charset)
     print("自己实现，耗时：%d秒,结果：\n%r" % (time.time() - now, result))
 
-
-    now = time.time()
-    result = sess.run(
-        softmax_transport,
-        feed_dict={
-            inputdata: _input_data
-        })
-    chars = "".join(charset)[:-1]
-    print("BeamSearch,输出：", result.shape)
-    ss = []
-    for r in result:
-        s = BeamSearch.ctcBeamSearch(r,chars,None,1)
-        ss.append(s)
-    print("BeamSearch,耗时：%d秒,结果(%d)：\n%r" % (time.time() - now, len(ss[0]),ss))
+    # 4.第三方的一个ctc inference实现
+    # now = time.time()
+    # result = sess.run(
+    #     softmax_transport,
+    #     feed_dict={
+    #         inputdata: _input_data
+    #     })
+    # chars = "".join(charset)[:-1]
+    # print("BeamSearch,输出：", result.shape)
+    # ss = []
+    # for r in result:
+    #     s = BeamSearch.ctcBeamSearch(r,chars,None,1)
+    #     ss.append(s)
+    # print("BeamSearch,耗时：%d秒,结果(%d)：\n%r" % (time.time() - now, len(ss[0]),ss))
 
