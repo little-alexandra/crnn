@@ -118,8 +118,8 @@ def train():
     cost, optimizer = network.loss(net_out, sparse_label, sequence_size)
 
     # 创建校验用的decode和编辑距离
-    validate_decode, indices, values, shape = network.validate(net_out, sequence_size)
-
+    validate_decode= network.validate(net_out, sequence_size)
+    # indices, values, shape
     # 创建一个变量用于把计算的精确度加载到summary中
     accuracy, edit_distance, train_summary_op, validate_summary_op = summary_scalars(cost)
 
@@ -171,7 +171,7 @@ def train():
                                          sequence_size,
                                          sess,
                                          validate_data_generator,
-                                         validate_decode, indices, values, shape,
+                                         validate_decode,
                                          validate_summary_op)
                     if is_need_early_stop(early_stop, _accuracy, saver, sess, epoch): break  # 用负的编辑距离
 
@@ -195,7 +195,7 @@ def train():
 
 
 def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_image, sequence_size, sess,
-             validate_data_generator, validate_decode, indices, values, shape, validate_summary_op):
+             validate_data_generator, validate_decode, validate_summary_op):
     logger.info('Epoch为检验(validate)，开始，校验%d个样本', FLAGS.validate_num * FLAGS.validate_batch)
     labels = []
     preds = []
@@ -208,12 +208,12 @@ def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_imag
         data_images = image_util.resize_batch_image(input_image_list, config.INPUT_SIZE, FLAGS.resize_mode)
         data_seq = [(img.shape[1] // config.WIDTH_REDUCE_TIMES) for img in data_images]
 
-        _indices, _values, _shape = sess.run([indices, values, shape],
+        preds_sparse = sess.run([validate_decode],
                                              feed_dict={input_image: data_images, sequence_size: data_seq})
-        logger.info("-------------- _indices:%s", _indices)
-        logger.info("-------------- _values:%s", _values)
-        logger.info("-------------- _shape:%s", _shape)
-        preds_sparse = tf.SparseTensor(_indices, _values, _shape)
+        # logger.info("-------------- _indices:%s", _indices)
+        # logger.info("-------------- _values:%s", _values)
+        # logger.info("-------------- _shape:%s", _shape)
+        # preds_sparse = tf.SparseTensor(_indices, _values, _shape)
         # SparseTensor(indices=Tensor("CTCBeamSearchDecoder:0", shape=(?, 2), dtype=int64), values=Tensor("CTCBeamSearchDecoder:1", shape=(?,), dtype=int64), dense_shape=Tensor("CTCBeamSearchDecoder:2", shape=(2,), dtype=int64))
         # SparseTensor(indices=Tensor("SparseTensor_2/indices:0", shape=(3, 2), dtype=int64), values=Tensor("SparseTensor_2/values:0", shape=(3,), dtype=int64), dense_shae=Tensor("SparseTensor_2/dense_shape:0", shape=(2,), dtype=int64))
         logger.info("-------------- preds_sparse:%s", preds_sparse)
