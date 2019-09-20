@@ -7,4 +7,4 @@ if [ "$2" = "" ]; then
     exit
 fi
 
-python -m data_generator.sample_enhance --label $1 --charset $2
+python -m crnn.data_generator.sample_enhance --label $1 --charset $2

@@ -1,4 +1,4 @@
-python -m tools.validate \
+python -m crnn.tools.validate \
     --crnn_model_dir=model \
     --image_dir=data/test \
     --charset=charset6k.txt \

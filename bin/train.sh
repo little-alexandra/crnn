@@ -14,7 +14,7 @@ if [ "$1" = "console" ]; then
     # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的
     CUDA_VISIBLE_DEVICES=$GPU \
     python \
-        -m tools.train \
+        -m crnn.tools.train \
         --data_dir=data/ \
         --train_batch=3 \
         --train_steps=5 \
@@ -37,7 +37,7 @@ else
     # 第一句表明使用第0个GPU，CRNN用第0个GPU，CTPN用第1个GPU，恩，我这么分配的 --model=LATEST \
     CUDA_VISIBLE_DEVICES=$GPU \
     nohup python \
-        -m tools.train \
+        -m crnn.tools.train \
         --data_dir=data/ \
         --train_batch=64 \
         --train_steps=1000000000 \

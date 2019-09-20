@@ -3,7 +3,7 @@ __pycache__/
 .idea/
 .idea/workspace.xml
 data/
-test/out/
+crnn/test/out/
 model/
 *.py[cod]
 *$py.class
@@ -14,8 +14,8 @@ logs/
 crnn.egg-info/
 build/
 
-data_generator/background/
-data_generator/font/
+crnn/data_generator/background/
+crnn/data_generator/font/
 data/train
 data/test
 data/validate

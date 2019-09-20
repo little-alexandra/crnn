@@ -59,7 +59,7 @@ echo "识别目录 : $DIR,\n识别标签 : $LABEL,\nBeam     : $BEAM,\n字符集
 
 if [ -n "$IMAGE" ]; then
     echo "单独识别图片：$IMAGE"
-    python -m tools.pred \
+    python -m crnn.tools.pred \
     --crnn_model_dir=model \
     --crnn_model_file=$MODEL \
     --file=$IMAGE \
@@ -74,7 +74,7 @@ fi
 
 
 echo "开始批量识别..."
-python -m tools.pred \
+python -m crnn.tools.pred \
     --crnn_model_dir=model \
     --crnn_model_file=$MODEL \
     --dir=$DIR \

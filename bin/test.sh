@@ -1,1 +1,1 @@
-python -m unittest test.$1
+python -m unittest crnn.test.$1

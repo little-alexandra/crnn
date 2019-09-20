@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 setup(
 	name="crnn",
-	version="0.10",
+	version="1.0",
 	description="ocr crnn module",
 	author="piginzoo",
 	url="http://www.piginzoo.com",
 	license="LGPL",
-	packages= find_packages(),
-	scripts=[],
-	)
+	packages=find_packages(where='.', exclude=(), include=('*',)),
+	package_data={'crnn':['charset.3770.txt']}
+)

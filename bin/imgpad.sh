@@ -3,4 +3,4 @@ if [ "$1" = "" ]; then
     exit
 fi
 
-python -m data_generator.imgpad --type=$1
+python -m crnn.data_generator.imgpad --type=$1
