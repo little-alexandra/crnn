@@ -119,7 +119,6 @@ def train():
 
     # 创建校验用的decode和编辑距离
     validate_decode = network.validate(net_out, sequence_size)
-
     # 创建一个变量用于把计算的精确度加载到summary中
     accuracy, edit_distance, train_summary_op, validate_summary_op = summary_scalars(cost)
 

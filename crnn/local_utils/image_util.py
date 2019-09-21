@@ -76,9 +76,11 @@ def resize_by_height_with_padding(image,target_height,target_width):
     target_image = cv2.resize(image, None, fx=scale, fy=scale, interpolation=cv2.INTER_AREA)
 
     h, w, _ = target_image.shape
-    # 缩放完，超宽了，截掉
+    # 缩放完，超过约定的最大宽度，则缩放为最大宽度
     if w>target_width:
-        return target_image[:,:target_width,:]
+        target_image = cv2.resize(target_image,(target_width,h),0,0)
+        return target_image
+        # return target_image[:,:target_width,:]
 
     # print((target_width, target_width - w))
     target_image = np.pad(target_image,
