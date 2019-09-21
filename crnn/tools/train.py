@@ -98,7 +98,7 @@ def train():
     logger.info("开始训练")
 
     # 获取字符库
-    charset = data_utils.get_charset(FLAGS.charset)
+    charset = data_utils.get_charset()
 
     # 定义张量
     input_image = tf.placeholder(tf.float32, shape=[None, 32, None, 3], name='input_image')
@@ -211,7 +211,7 @@ def validate(epoch, summary_writer, accuracy, charset, edit_distance, input_imag
         preds_sparse = sess.run(validate_decode,feed_dict={input_image: data_images, sequence_size: data_seq})
 
         logger.debug("Validate Inference完毕，识别了%d张图片", len(data_images))
-        _preds = data_utils.sparse_tensor_to_str_new(preds_sparse, charset)
+        _preds = data_utils.sparse_tensor_to_str(preds_sparse.indices,preds_sparse.values,preds_sparse.dense_shape, charset)
         _labels = data_utils.id2str(input_labels, charset)
         preds += _preds
         labels += _labels

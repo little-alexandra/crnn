@@ -7,5 +7,6 @@ setup(
 	url="http://www.piginzoo.com",
 	license="LGPL",
 	packages=find_packages(where='.', exclude=(), include=('*',)),
-	package_data={'crnn':['charset.3770.txt']}
+	package_dir={'crnn.config': 'crnn/config'},
+	package_data={'crnn.config':['charset.3770.txt','charset.5987.txt','charset.6883.txt']}
 )

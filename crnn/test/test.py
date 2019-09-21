@@ -72,7 +72,18 @@ def process_unknown_charactors(sentence):
     return result
 
 
+def get_charset():
+    from os import path
+    resources_dir = path.join(path.dirname(__file__), '../config/charset.3770.txt')
+
+    file = open(resources_dir)
+    content = file.read()
+    print(content)
+
+    print(resources_dir)
+
 if __name__ == '__main__':
     # test_sparse_tuple_from()
     #test_expand_array()
-    print(process_unknown_charactors("０我爱北京［天安门］Ａ"))
+    # print(process_unknown_charactors("０我爱北京［天安门］Ａ"))
+    get_charset()

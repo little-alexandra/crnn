@@ -153,7 +153,7 @@ if __name__ == '__main__':
     worker = int(args.worker)
     task_num = total // worker # 每个进程应该处理的个数
     # 加载字符集
-    charset = data_utils.get_charset(charset_file_name)
+    charset = data_utils.get_charset()
     # 预先加载所有的纸张背景
     all_bg_images = generator.load_all_backgroud_images(os.path.join('../ctpn/data_generator/background/'))
     # 生成图片数据

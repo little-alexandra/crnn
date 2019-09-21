@@ -78,6 +78,6 @@ if __name__ == '__main__':
     new_label_name = os.path.join(enhance_dir,"enhance.txt")
     original_file_name = args.label
 
-    charset = data_utils.get_charset(args.charset)
+    charset = data_utils.get_charset()
 
     process(original_file_name,new_label_name,enhance_dir,charset)

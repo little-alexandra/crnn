@@ -37,7 +37,7 @@ def convert():
     print("CKPT模型目录", ckptModPath)
     print("charset目录", FLAGS.charset)
     # 获取字符库
-    charset = data_utils.get_charset(FLAGS.charset)
+    charset = data_utils.get_charset()
 
     # 定义张量
     input_image = tf.placeholder(tf.float32, shape=[None, 32, None, 3], name='input_image')

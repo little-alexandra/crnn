@@ -95,7 +95,10 @@ def id2str(results, characters):
 # 加载字符集，charset.txt，最后一个是空格
 # 为了兼容charset.txt和charset6k.txt，增加鲁棒性，改一下
 # 先读入内存，除去
-def get_charset(charset_file):
+def get_charset():
+    # 获得当前py文件的路径，即data_utils.py的路径，这个可以是文件系统的路径，也可以是python setup.py install后的egg压缩包内的路径
+    # charset.3770.txt会打包到egg文件里的
+    charset_file = os.path.join(os.path.dirname(__file__), config.CHARSET_FILE)
     charset = open(charset_file, 'r', encoding='utf-8').readlines()
     charset = [ch.strip("\n") for ch in charset]
     charset = "".join(charset)
@@ -440,6 +443,5 @@ def extend_to_max_len(labels, ext_val: int = -1):
 
 
 if __name__ == "__main__":
-    tf.app.flags.DEFINE_string('charset', 'charset6k.txt', '')
-    chrset = get_charset()
-    print(chrset)
+    charset = get_charset()
+    print(charset)

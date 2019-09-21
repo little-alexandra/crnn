@@ -10,7 +10,7 @@ seq= 50
 if(len(args)==2):
     print("Sequence Length:",args[1])
     seq = int(args[1])
-charset = data_utils.get_charset("charset.3770.txt")
+charset = data_utils.get_charset()
 
 batch = 128
 

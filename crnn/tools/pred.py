@@ -29,7 +29,7 @@ def initialize(config, beam_width=config.BEAM_WIDTH):
     g = tf.Graph()
     with g.as_default():
         # num_classes = len(codec.reader.char_dict) + 1 if num_classes == 0 else num_classes#这个是在读词表，37个类别，没想清楚？？？为何是37个，26个字母+空格不是37个，噢，对了，还有数字0-9
-        charset = data_utils.get_charset(FLAGS.charset)
+        charset = data_utils.get_charset()
         logger.info("加载词表，共%d个", len(charset))
 
         decodes, prob, inputdata, batch_size = build_graph(g, charset, beam_width)
@@ -74,7 +74,7 @@ def recognize():
         image_list.append(image)
         logger.debug("加载了图片:%s", image_path)
     elif (FLAGS.label):
-        charset = data_utils.get_charset(FLAGS.charset)
+        charset = data_utils.get_charset()
         image_name_list, labels = data_utils.read_labeled_image_list(FLAGS.label, charset,
                                                                      unknow_charactor_replacer='■', limit=100)
         logger.info("OCR识别(基于标签文件）：%s,图片数量：%d", FLAGS.label, len(image_name_list))

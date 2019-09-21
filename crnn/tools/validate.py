@@ -13,7 +13,7 @@ FLAGS = tf.app.flags.FLAGS
 
 def validate():
 
-    charset  = data_utils.get_charset(FLAGS.charset)
+    charset  = data_utils.get_charset()
     image_names, labels = data_utils.read_labeled_image_list(FLAGS.label_file,charset)
     labels = data_utils.process_unknown_charactors_all(labels,charset,replace_char='■')
 
