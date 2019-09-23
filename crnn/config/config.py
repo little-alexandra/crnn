@@ -8,6 +8,7 @@ SEQ_LENGTH = int(INPUT_SIZE[1] / WIDTH_REDUCE_TIMES)
 
 RESIZE_MODE_PAD="PAD"
 RESIZE_MODE_FIX="FIX"
+RESIZE_MODE_PWH="PWH"
 
 # 定义字符集路径，相对于crnn/utils/data_utils.py的路径，所以是../config/
 CHARSET_FILE='../config/charset.3770.txt'

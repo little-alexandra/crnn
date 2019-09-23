@@ -39,6 +39,8 @@ def resize_batch_image(image_list: list,output_size: tuple,resize_mode):
             out_img = cv2.resize(img, (out_width, out_height), interpolation=cv2.INTER_AREA)
         elif resize_mode == config.RESIZE_MODE_PAD:
             out_img = resize_by_height_with_padding(img,out_height,out_width)
+        elif resize_mode == config.RESIZE_MODE_PWH:
+            out_img = resize_with_padding(img,out_height,out_width)
         else:
             raise ValueError("识别不出来的Resize模式：%s",resize_mode)
 
@@ -93,6 +95,36 @@ def resize_by_height_with_padding(image,target_height,target_width):
     # logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
     return target_image
 
+#保持宽高比缩放，宽或高不足加pad
+def resize_with_padding(image,target_height,target_width):
+    h, w, _ = image.shape
+    scale_h = target_height/h
+    scale_w = target_width/w
+    # 高比宽更接近原图，宽度不变，高度加pad
+    if scale_h > scale_w:
+        target_image = cv2.resize(image, None, fx=scale_w, fy=scale_w, interpolation=cv2.INTER_AREA)
+        h, w, _ = target_image.shape
+        pad_h = target_height - h
+        target_image = np.pad(target_image,
+                              pad_width=((0, pad_h),  # 高度在下方pad
+                                         (0, 0),  # 宽度不变
+                                         (0, 0)),  # Channel不动
+                              mode="constant",
+                              constant_values=(255))
+    else:
+        # 高比宽更偏离原图，高度不变，宽度加pad
+        target_image = cv2.resize(image, None, fx=scale_h, fy=scale_h, interpolation=cv2.INTER_AREA)
+        h, w, _ = target_image.shape
+
+        target_image = np.pad(target_image,
+                              pad_width=((0, 0),  # 高度不动
+                                         (0, target_width - w),  # 宽度(before, after),左添加0，右边添加512-目前宽度
+                                         (0, 0)),  # Channel不动
+                              mode="constant",
+                              constant_values=(255))
+
+    # logger.debug("原图:%r，Resize图：%r",image.shape,target_image.shape)
+    return target_image
 
 # 根据最大size获取合适的缩放后的图像,废弃了，处理的比较复杂，简化之,6.7,piginzoo
 def get_scaled_image_no_padding(image, max_size):

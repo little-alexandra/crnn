@@ -1,6 +1,6 @@
 import unittest
 import matplotlib.pyplot as plt
-from local_utils import image_util
+from crnn.local_utils import image_util
 import cv2
 
 class TestImageUtil(unittest.TestCase):
@@ -16,8 +16,8 @@ class TestImageUtil(unittest.TestCase):
         cv2.imwrite("test/out/padding01.png",target_image)
         plt.imshow(target_image)
         plt.show()
-        target_image = image_util.resize_by_height_with_padding(image,32,32)
-        self.assertEqual(target_image.shape,(32,32,3))
+        target_image = image_util.resize_with_padding(image,64,256)
+        self.assertEqual(target_image.shape,(64,256,3))
         cv2.imwrite("test/out/padding02.png", target_image)
         plt.imshow(target_image)
         plt.show()
